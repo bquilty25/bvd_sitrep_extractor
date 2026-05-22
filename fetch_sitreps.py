@@ -162,25 +162,32 @@ def save_manifest(path: Path, manifest: dict) -> None:
 
 
 def download_pdf(url: str, pdf_dir: Path, manifest: dict,
-                 title: str = "", source_page: str = "") -> tuple:
+                 title: str = "", source_page: str = "",
+                 session: requests.Session | None = None) -> tuple:
     """
-    Download the PDF at url to pdf_dir if not already in manifest.
+    Download the PDF at url to pdf_dir if not already in manifest (or file missing).
     Returns (is_new, local_path).
     """
     filename = unquote(Path(urlparse(url).path).name)
     dest = pdf_dir / filename
 
-    if url in manifest:
+    if url in manifest and dest.exists():
         return False, dest
 
     print(f"  ↓  {filename}")
     if title:
         print(f"     {title}")
+    _get = (session or requests).get
     try:
-        resp = requests.get(url, timeout=60)
+        resp = _get(url, timeout=60)
         resp.raise_for_status()
     except requests.RequestException as exc:
         print(f"     Warning: download failed — {exc}", file=sys.stderr)
+        return False, dest
+
+    ct = resp.headers.get("Content-Type", "")
+    if "pdf" not in ct.lower() and not filename.lower().endswith(".pdf"):
+        print(f"     Warning: unexpected Content-Type '{ct}' — skipping", file=sys.stderr)
         return False, dest
 
     pdf_dir.mkdir(parents=True, exist_ok=True)
@@ -245,11 +252,14 @@ def main() -> None:
     print(f"Found {len(urls)} relevant PDF link(s) on INSP website.\n")
 
     manifest  = load_manifest(manifest_path)
+    session   = requests.Session()
+    session.headers["User-Agent"] = "MSF-Epicentre-SitRep-Fetcher/1.0"
     new_count = 0
     for entry in urls:
         is_new, _ = download_pdf(
             entry["url"], pdf_dir, manifest,
             title=entry["title"], source_page=entry["source_page"],
+            session=session,
         )
         if is_new:
             new_count += 1
@@ -260,7 +270,7 @@ def main() -> None:
     if new_count:
         print(f"  {new_count} new PDF(s) downloaded → {pdf_dir}/")
         print(f"  Total archived : {len(manifest)} PDF(s)")
-        print(f"\nRun extraction to update the master linelist:")
+        print(f"\nRun extraction to update the master counts table:")
         print(f"  python3 extract_sitrep.py --update --pdf-dir {pdf_dir}")
     else:
         print(f"  No new PDFs — archive is up to date ({len(manifest)} PDF(s) total).")

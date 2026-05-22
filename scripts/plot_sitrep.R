@@ -30,9 +30,9 @@ ZONE_LEVELS <- c(
 )
 
 PAL <- c(
-  "Unconfirmed" = "#4E9AC7",
-  "Confirmed"   = "#C04A3A",
-  "Deaths"      = "#555555"
+  "Suspect/probable cases" = "#4E9AC7",
+  "Confirmed cases"        = "#C04A3A",
+  "Suspected deaths"       = "#555555"
 )
 
 # Force integer axis breaks (suppresses decimal labels on low-count panels)
@@ -118,7 +118,10 @@ make_zone_labels <- function(dat) {
 
 # ── Plot 1: Cumulative epidemic curve (totals) ─────────────────────────────────
 p1 <- totals |>
-  select(date, Unconfirmed = unconfirmed, Confirmed = confirmed, Deaths = deaths) |>
+  select(date,
+         `Suspect/probable cases` = unconfirmed,
+         `Confirmed cases`        = confirmed,
+         `Suspected deaths`       = deaths) |>
   pivot_longer(-date, names_to = "category", values_to = "count") |>
   mutate(category = factor(category, levels = names(PAL))) |>
   ggplot(aes(x = date, y = count, colour = category, group = category)) +
@@ -128,28 +131,30 @@ p1 <- totals |>
   scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.08))) +
   labs(
-    title    = "MVE Ituri \u2014 Cumulative epidemic curve",
+    title    = "MVE DRC \u2014 Cumulative epidemic curve",
     subtitle = "Total counts across all health zones",
     x = NULL, y = "Cumulative count", colour = NULL,
-    caption  = "Source: WHO/MoH DRC situation reports"
+    caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 12)
 
 # ── Plot 2: Daily new cases (totals) ──────────────────────────────────────────
 p2 <- daily_new |>
-  select(date, Unconfirmed = unconfirmed, Confirmed = confirmed) |>
+  select(date,
+         `Suspect/probable cases` = unconfirmed,
+         `Confirmed cases`        = confirmed) |>
   pivot_longer(-date, names_to = "category", values_to = "count") |>
-  mutate(category = factor(category, levels = c("Unconfirmed", "Confirmed"))) |>
+  mutate(category = factor(category, levels = c("Suspect/probable cases", "Confirmed cases"))) |>
   ggplot(aes(x = date, y = count, fill = category)) +
   geom_col(position = "dodge", width = 0.3, na.rm = TRUE) +
   scale_fill_manual(values = PAL) +
   scale_x_date(date_labels = "%d %b", date_breaks = "1 day") +
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.1))) +
   labs(
-    title    = "MVE Ituri \u2014 Daily new cases",
+    title    = "MVE DRC \u2014 Daily new cases",
     subtitle = "Total reported per situation report",
     x = NULL, y = "New cases", fill = NULL,
-    caption  = "Source: WHO/MoH DRC situation reports"
+    caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 12)
 
@@ -157,9 +162,11 @@ p2 <- daily_new |>
 zone_ts_long <- zone_ts |>
   make_zone_labels() |>
   select(date, zone_label,
-         Unconfirmed = unconfirmed, Confirmed = confirmed, Deaths = deaths) |>
+         `Suspect/probable cases` = unconfirmed,
+         `Confirmed cases`        = confirmed,
+         `Suspected deaths`       = deaths) |>
   pivot_longer(
-    cols      = c(Unconfirmed, Confirmed, Deaths),
+    cols      = c(`Suspect/probable cases`, `Confirmed cases`, `Suspected deaths`),
     names_to  = "category",
     values_to = "count"
   ) |>
@@ -174,10 +181,10 @@ p3 <- zone_ts_long |>
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.15))) +
   facet_wrap(~ zone_label, scales = "free_y", ncol = 2) +
   labs(
-    title    = "MVE Ituri \u2014 Cumulative cases by health zone",
-    subtitle = "Each panel shows one health zone; y-axis is free. Unconfirmed = suspect + probable.",
+    title    = "MVE DRC \u2014 Cumulative cases by health zone",
+    subtitle = "Each panel shows one health zone; y-axis is free.",
     x = NULL, y = "Cumulative count", colour = NULL,
-    caption  = "Source: WHO/MoH DRC situation reports"
+    caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 10) +
   theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
@@ -186,13 +193,14 @@ p3 <- zone_ts_long |>
 zone_new_long <- zone_new |>
   make_zone_labels() |>
   select(date, zone_label,
-         Unconfirmed = unconfirmed, Confirmed = confirmed) |>
+         `Suspect/probable cases` = unconfirmed,
+         `Confirmed cases`        = confirmed) |>
   pivot_longer(
-    cols      = c(Unconfirmed, Confirmed),
+    cols      = c(`Suspect/probable cases`, `Confirmed cases`),
     names_to  = "category",
     values_to = "count"
   ) |>
-  mutate(category = factor(category, levels = c("Unconfirmed", "Confirmed")))
+  mutate(category = factor(category, levels = c("Suspect/probable cases", "Confirmed cases")))
 
 p4 <- zone_new_long |>
   ggplot(aes(x = date, y = count, fill = category)) +
@@ -202,10 +210,10 @@ p4 <- zone_new_long |>
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.15))) +
   facet_wrap(~ zone_label, scales = "free_y", ncol = 2) +
   labs(
-    title    = "MVE Ituri \u2014 Daily new cases by health zone",
-    subtitle = "Per situation report; y-axis is free. Unconfirmed = suspect + probable.",
+    title    = "MVE DRC \u2014 Daily new cases by health zone",
+    subtitle = "Per situation report; y-axis is free.",
     x = NULL, y = "New cases", fill = NULL,
-    caption  = "Source: WHO/MoH DRC situation reports"
+    caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 10) +
   theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
