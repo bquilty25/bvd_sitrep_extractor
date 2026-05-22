@@ -11,9 +11,6 @@ build/
 venv/
 env/
 
-# Outputs (generated — not tracked)
-outputs/
-
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
 

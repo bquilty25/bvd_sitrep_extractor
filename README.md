@@ -8,9 +8,9 @@ Two tables are extracted from each SitRep and written to three output files:
 |---|---|
 | First table | New cases for the reporting day |
 | Tableau III | Cumulative cases and deaths by health zone |
-| Combined | Both tables merged into a single standardised linelist |
+| Combined | Both tables merged into a single standardised counts table |
 
-The pipeline supports one-off extraction of a single PDF, batch processing of multiple PDFs, and a daily update mode that automatically fetches new SitReps from the INSP website and appends only new data to a growing master linelist.
+The pipeline supports one-off extraction of a single PDF, batch processing of multiple PDFs, and a daily update mode that automatically fetches new SitReps from the INSP website and appends only new data to a growing master counts table.
 
 ---
 
@@ -72,7 +72,7 @@ python3 extract_sitrep.py --update
 
 `fetch_sitreps.py` scrapes `insp.cd/ebola/` and `insp.cd/category/sitrep/` for PDF links, downloads new ones to `pdfs/`, and records them in `pdfs/manifest.json`. PDFs are kept permanently as a local archive in case they are removed from the website.
 
-`extract_sitrep.py --update` reads `pdfs/`, skips any file already recorded in `outputs/processed.json`, extracts the rest, and appends their rows to `master_combined_linelist.csv`. Each new SitRep's verbatim tables also land in `outputs/<pdf_stem>/`.
+`extract_sitrep.py --update` reads `pdfs/`, skips any file already recorded in `outputs/processed.json`, extracts the rest, and appends their rows to `master_combined_counts.csv`. Each new SitRep's verbatim tables also land in `outputs/<pdf_stem>/`.
 
 **Cron example** (runs daily at 08:00):
 
@@ -111,7 +111,7 @@ Pass multiple PDFs to process them all in one run and produce a combined master 
 python3 extract_sitrep.py SitRep_001.pdf SitRep_002.pdf SitRep_006.pdf
 ```
 
-Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_linelist.csv` is written at the `outputs/` root.
+Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_counts.csv` is written at the `outputs/` root.
 
 ---
 
@@ -144,9 +144,9 @@ Written to `outputs/` (single PDF) or `outputs/<pdf_stem>/` (batch / update mode
 
 | File | Contents |
 |---|---|
-| `new_cases_linelist.csv` | New-cases table extracted verbatim from the PDF |
-| `cumulative_linelist.csv` | Cumulative table (Tableau III) extracted verbatim |
-| `combined_linelist.csv` | Both tables in a single standardised 12-column linelist |
+| `new_cases_counts.csv` | New-cases table extracted verbatim from the PDF |
+| `cumulative_counts.csv` | Cumulative table (Tableau III) extracted verbatim |
+| `combined_counts.csv` | Both tables in a single standardised 13-column counts table |
 | `raw_extraction.json` | Raw JSON returned by Claude — useful for auditing and re-running tests |
 
 ### Master files (batch / update mode)
@@ -155,14 +155,14 @@ Written to `outputs/`.
 
 | File | Contents |
 |---|---|
-| `master_combined_linelist.csv` | All SitReps concatenated into one standardised linelist, sorted chronologically |
+| `master_combined_counts.csv` | All SitReps concatenated into one standardised counts table, sorted chronologically |
 | `processed.json` | Registry of processed PDF filenames and timestamps |
 
 ### PDF archive
 
 Downloaded PDFs are stored in `pdfs/` (gitignored). A `pdfs/manifest.json` records each URL, filename, download timestamp, and file size.
 
-### Combined linelist columns
+### Combined counts table columns
 
 | Column | Description |
 |---|---|
@@ -179,7 +179,7 @@ Downloaded PDFs are stored in `pdfs/` (gitignored). A `pdfs/manifest.json` recor
 | `province` | Province |
 | `sitrep_source` | Stem of the source PDF filename — used to trace each row back to its document |
 
-> Cells that appear as `ND` (Non Disponible) in the source PDF are mapped to blank in the combined linelist. Subtotal and total rows are retained as-is.
+> Cells that appear as `ND` (Non Disponible) in the source PDF are mapped to blank in the combined counts table. Subtotal and total rows are retained as-is.
 
 ---
 
@@ -213,14 +213,14 @@ Expected result: **44 passed** (unit tests only — schema and data tests are sk
 
 `extract_sitrep.py` sends each PDF to Claude as a base64-encoded `document` block. Claude processes each page as both a rendered image and extracted text simultaneously — this is what allows it to correctly read visually formatted tables, merged cells, and footnotes that plain text extraction tools would mangle. Claude returns a structured JSON object with both tables, which is converted to pandas DataFrames and mapped to the standardised schema.
 
-The `--update` mode compares the PDF archive against `processed.json` to extract only new files, then appends their rows to the master linelist rather than overwriting it.
+The `--update` mode compares the PDF archive against `processed.json` to extract only new files, then appends their rows to the master counts table rather than overwriting it.
 
 ---
 
 ## Adapting to a new SitRep
 
-Each SitRep may use slightly different column names. If the combined linelist has blank columns that should have data:
+Each SitRep may use slightly different column names. If the combined counts table has blank columns that should have data:
 
 1. Open `outputs/<pdf_stem>/raw_extraction.json` and check the exact column names Claude found.
-2. Update the column name mappings in `build_combined_linelist()` in [extract_sitrep.py](extract_sitrep.py).
+2. Update the column name mappings in `build_combined_counts()` in [extract_sitrep.py](extract_sitrep.py).
 3. Re-run `pytest tests/` — the `TestCombinedContent` tests will catch any remaining gaps.

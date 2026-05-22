@@ -23,17 +23,32 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from extract_sitrep import (
     clean_json_text, build_dataframe, coerce_numerics,
-    parse_french_date, extract_date_from_filename, build_combined_linelist, _nd,
+    parse_french_date, extract_date_from_filename, build_combined_counts, _nd,
     COMBINED_COLS, normalise_zone, _row_has_data,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 
-OUTPUTS       = Path(__file__).parent.parent / "outputs"
-RAW_JSON      = OUTPUTS / "raw_extraction.json"
-NEW_CASES_CSV = OUTPUTS / "new_cases_linelist.csv"
-CUMUL_CSV     = OUTPUTS / "cumulative_linelist.csv"
-COMBINED_CSV  = OUTPUTS / "combined_linelist.csv"
+OUTPUTS = Path(__file__).parent.parent / "outputs"
+
+
+def _find_latest_output_dir(outputs_root: Path) -> Path | None:
+    """Return the most recently processed sitrep subdirectory, or None."""
+    candidates = [
+        d for d in outputs_root.iterdir()
+        if d.is_dir() and (d / "raw_extraction.json").exists()
+    ]
+    return (
+        max(candidates, key=lambda d: (d / "raw_extraction.json").stat().st_mtime)
+        if candidates else None
+    )
+
+
+_SAMPLE_DIR   = _find_latest_output_dir(OUTPUTS)
+RAW_JSON      = (_SAMPLE_DIR / "raw_extraction.json")     if _SAMPLE_DIR else (OUTPUTS / "raw_extraction.json")
+NEW_CASES_CSV = (_SAMPLE_DIR / "new_cases_counts.csv")  if _SAMPLE_DIR else (OUTPUTS / "new_cases_counts.csv")
+CUMUL_CSV     = (_SAMPLE_DIR / "cumulative_counts.csv") if _SAMPLE_DIR else (OUTPUTS / "cumulative_counts.csv")
+COMBINED_CSV  = (_SAMPLE_DIR / "combined_counts.csv")   if _SAMPLE_DIR else (OUTPUTS / "combined_counts.csv")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -165,7 +180,7 @@ class TestNdHelper:
         assert _nd("42") == "42"
 
 
-class TestBuildCombinedLinelist:
+class TestBuildCombinedCounts:
     @pytest.fixture
     def sample_raw(self):
         _COLS = ["province", "zone_de_sante", "cas_suspects", "cas_probables",
@@ -200,60 +215,60 @@ class TestBuildCombinedLinelist:
         }
 
     def test_has_correct_columns(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         assert list(df.columns) == COMBINED_COLS
 
     def test_row_count(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         # 2 new-cases rows + 1 cumulative row
         assert len(df) == 3
 
     def test_count_types_present(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         assert set(df["count_type"].unique()) == {"Nouveaux", "Cumules"}
 
     def test_nouveaux_dates(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         nc = df[df["count_type"] == "Nouveaux"]
         assert (nc["count_start_date"] == "20/05/2026").all()
         assert (nc["count_end_date"]   == "20/05/2026").all()
 
     def test_cumules_end_date_from_title(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         cum = df[df["count_type"] == "Cumules"]
         assert (cum["count_end_date"] == "19/05/2026").all()
 
     def test_cumules_start_date_empty(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         cum = df[df["count_type"] == "Cumules"]
         assert (cum["count_start_date"] == "").all()
 
     def test_nd_stripped(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         nc = df[df["count_type"] == "Nouveaux"]
         # "Nouveaux cas probables" was "ND" for Bunia row
         assert nc.iloc[0]["cases_probable"] == ""
 
     def test_zero_preserved(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         nc = df[df["count_type"] == "Nouveaux"]
         # Total row has "0" for probables — should stay as "0"
         assert nc.iloc[1]["cases_probable"] == "0"
 
     def test_nouveaux_deaths_suspected_empty(self, sample_raw):
         """New-cases table has no deaths_suspected column — must be blank."""
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         nc = df[df["count_type"] == "Nouveaux"]
         assert (nc["deaths_suspected"] == "").all()
 
     def test_cumules_cases_probable_empty(self, sample_raw):
         """Cumulative table has no cases_probable — must be blank."""
-        df = build_combined_linelist(sample_raw, "20/05/2026")
+        df = build_combined_counts(sample_raw, "20/05/2026")
         cum = df[df["count_type"] == "Cumules"]
         assert (cum["cases_probable"] == "").all()
 
     def test_sitrep_source_column_present(self, sample_raw):
-        df = build_combined_linelist(sample_raw, "20/05/2026", source="test_sitrep")
+        df = build_combined_counts(sample_raw, "20/05/2026", source="test_sitrep")
         assert "sitrep_source" in df.columns
         assert (df["sitrep_source"] == "test_sitrep").all()
 
@@ -278,7 +293,7 @@ class TestBuildCombinedLinelist:
             },
             "cumulative": {"table_title": "", "columns": _COLS, "rows": [], "notes": ""},
         }
-        df = build_combined_linelist(raw, "20/05/2026")
+        df = build_combined_counts(raw, "20/05/2026")
         assert len(df) == 1
         assert df.iloc[0]["zone"] == "Bunia"
 
@@ -371,21 +386,21 @@ class TestRawJsonSchema:
 @pytest.fixture(scope="session")
 def new_cases():
     if not NEW_CASES_CSV.exists():
-        pytest.skip("new_cases_linelist.csv not found — run extract_sitrep.py first")
+        pytest.skip("new_cases_counts.csv not found — run extract_sitrep.py first")
     return pd.read_csv(NEW_CASES_CSV)
 
 
 @pytest.fixture(scope="session")
 def cumulative():
     if not CUMUL_CSV.exists():
-        pytest.skip("cumulative_linelist.csv not found — run extract_sitrep.py first")
+        pytest.skip("cumulative_counts.csv not found — run extract_sitrep.py first")
     return pd.read_csv(CUMUL_CSV)
 
 
 @pytest.fixture(scope="session")
 def combined():
     if not COMBINED_CSV.exists():
-        pytest.skip("combined_linelist.csv not found — run extract_sitrep.py first")
+        pytest.skip("combined_counts.csv not found — run extract_sitrep.py first")
     return pd.read_csv(COMBINED_CSV, dtype=str, keep_default_na=False)
 
 
@@ -396,15 +411,15 @@ def combined():
 class TestOutputFiles:
     def test_new_cases_csv_exists(self):
         if not NEW_CASES_CSV.exists():
-            pytest.skip("new_cases_linelist.csv not found — run extract_sitrep.py first")
+            pytest.skip("new_cases_counts.csv not found — run extract_sitrep.py first")
 
     def test_cumulative_csv_exists(self):
         if not CUMUL_CSV.exists():
-            pytest.skip("cumulative_linelist.csv not found — run extract_sitrep.py first")
+            pytest.skip("cumulative_counts.csv not found — run extract_sitrep.py first")
 
     def test_combined_csv_exists(self):
         if not COMBINED_CSV.exists():
-            pytest.skip("combined_linelist.csv not found — run extract_sitrep.py first")
+            pytest.skip("combined_counts.csv not found — run extract_sitrep.py first")
 
     def test_new_cases_csv_readable(self, new_cases):
         assert new_cases is not None
@@ -513,8 +528,13 @@ class TestCumulativeContent:
             pytest.skip("No matching numeric columns between the two tables")
 
         for key in shared:
-            nc_total  = nc_num[nc_cols[key]].sum()
-            cum_total = cum_num[cum_cols[key]].sum()
+            # Use min_count=1 so that all-NaN columns return NaN instead of 0.0
+            # (a column present in both schemas but never populated shouldn't
+            # trigger a false failure).
+            nc_total  = nc_num[nc_cols[key]].sum(min_count=1)
+            cum_total = cum_num[cum_cols[key]].sum(min_count=1)
+            if pd.isna(nc_total) or pd.isna(cum_total):
+                continue
             assert cum_total >= nc_total, (
                 f"Column '{key}': cumulative total ({cum_total}) < "
                 f"new-cases total ({nc_total})"

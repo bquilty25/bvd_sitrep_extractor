@@ -7,10 +7,9 @@ Extracts two tables from an INSP DRC situation report PDF using the Anthropic AP
   - cumulative : Table 3 (données cumulatives)
 
 Outputs (written to --output-dir, default ./outputs):
-  new_cases_linelist.csv
-  cumulative_linelist.csv
-  combined_linelist.csv
-  sitrep_extraction.xlsx   (all three as separate sheets)
+  new_cases_counts.csv
+  cumulative_counts.csv
+  combined_counts.csv
   raw_extraction.json      (raw Claude JSON, useful for auditing / re-testing)
 
 Usage:
@@ -42,7 +41,7 @@ COMBINED_COLS = [
     "count_start_date", "count_end_date", "count_type",
     "cases_suspect", "cases_probable", "cases_confirmed",
     "deaths_suspected", "deaths_probable", "deaths_confirmed",
-    "zone", "province", "sitrep_source",
+    "zone", "province", "sitrep_source", "is_aggregate",
 ]
 
 # Keywords that identify an alerts/investigation table that must NOT be treated
@@ -61,11 +60,37 @@ FRENCH_MONTHS = {
 }
 
 # ── Zone name normalisation ───────────────────────────────────────────────────
+# Regex to detect aggregate / subtotal rows (zone or province field).
+_TOTAL_RE = re.compile(r"\b(total|sous[\s\-]?total)\b", re.IGNORECASE)
+
 # Keys are lowercase; values are the canonical display spelling.
 ZONE_NAME_MAP: dict[str, str] = {
     "mungbwalu": "Mongbwalu",
     "bambu":     "Bambu",
 }
+
+
+# Detect rows where multiple zones are packed into a single cell, e.g.
+# "Mongbwalu, Bunia, Rwampara (3 ZS)" — these are aggregate summary rows.
+_MULTI_ZONE_RE = re.compile(r",|\(\d+\s*ZS\)", re.IGNORECASE)
+
+
+def _is_aggregate(zone: str, province: str) -> str:
+    """Return 'TRUE' if the row is a summary/total row, 'FALSE' otherwise."""
+    z = (zone or "").strip()
+    p = (province or "").strip()
+    if _TOTAL_RE.search(z):
+        return "TRUE"
+    if not z and _TOTAL_RE.search(p):
+        return "TRUE"
+    # Multiple zones packed into one cell (e.g. "Mongbwalu, Bunia, Rwampara")
+    if _MULTI_ZONE_RE.search(z):
+        return "TRUE"
+    # Province-level aggregate: zone is empty but province is named.
+    # These rows represent province-level summaries (not individual health zones).
+    if not z and p:
+        return "TRUE"
+    return "FALSE"
 
 
 def normalise_zone(zone: str) -> str:
@@ -99,9 +124,12 @@ fences, no commentary — containing EXACTLY two keys.
 
 TABLE 1 — key "new_cases":
   The table showing the most recent daily case counts (nouvelles données, nouveaux \
-cas, tableau de bord, or similar). It may be a single summary row, a per-zone \
-breakdown, or a pivoted table where health zones appear as columns — if so, \
-TRANSPOSE it so each output row represents one zone.
+cas, or similar). It may be a single summary row, a per-zone breakdown, or a \
+pivoted table where health zones appear as columns — if so, TRANSPOSE it so each \
+output row represents one zone.
+  If the document has no dedicated new-cases table (e.g. it is an alerts or \
+administrative report, or there is no section reporting new cases for a single \
+day), return "rows": [].
 
 TABLE 2 — key "cumulative":
   The table with cumulative totals (Tableau 3, données cumulatives / cumulées, or \
@@ -124,14 +152,32 @@ any field not present in the source, and preserve zeros as "0":
   "deces_probables" count of probable deaths
   "deces_confirmes" count of confirmed deaths
 
-Also provide:
-  "table_title" : exact title string from the document (empty string if none found)
-  "notes"       : any footnote or asterisk text below the table (empty string if none)
+Also provide for EACH table:
+  "table_title"      : exact title string from the document (empty string if none found)
+  "period_end_date"  : end date of this table's reporting period in DD/MM/YYYY format.
+                       Scan the table title, column headers, body text, document header,
+                       and phrases like 'au 13 mai 2026', 'en date du', 'cumul au',
+                       'période du ... au ...'. Empty string ONLY if genuinely absent
+                       from the entire document.
+  "period_start_date": start date of the reporting period in DD/MM/YYYY format if stated
+                       (e.g. from 'du 1er Avril 2026'). Empty string if not stated.
+  "notes"            : any footnote or asterisk text below the table (empty string if none)
+
+TEXT FALLBACK FOR ROW FIELDS:
+  If a numeric field is absent from the table itself but its value is explicitly and
+  unambiguously stated in the body text, Points Saillants, or footnotes for the same
+  reporting unit (zone / province / total) AND for the same reporting period (new cases
+  for TABLE 1; cumulative totals for TABLE 2), populate that field from the text.
+  Do NOT pull cumulative totals into TABLE 1 rows, or daily new-case counts into TABLE 2
+  rows. Do NOT infer, estimate, or calculate — only use figures explicitly stated in the
+  document for that table's period.
 
 Schema:
 {{
   "new_cases": {{
     "table_title": "...",
+    "period_end_date": "DD/MM/YYYY or empty",
+    "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
                 "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
     "rows": [
@@ -144,6 +190,8 @@ Schema:
   }},
   "cumulative": {{
     "table_title": "...",
+    "period_end_date": "DD/MM/YYYY or empty",
+    "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
                 "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
     "rows": [...],
@@ -199,15 +247,29 @@ def _row_has_data(r: dict) -> bool:
     return any(_nd(r.get(f, "")) != "" for f in _NUMERIC_FIELDS)
 
 
-def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") -> pd.DataFrame:
+def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") -> pd.DataFrame:
     """
     Merge new_cases and cumulative into a single standardised linelist.
     count_type = 'Nouveaux'  for the first table (new cases, single reporting day)
     count_type = 'Cumules'   for Table 3 (cumulative up to the date in its title)
     Expects normalised keys from TABLE_EXTRACTION_PROMPT.
     """
-    cum_end = (parse_french_date(raw_data["cumulative"].get("table_title", ""))
-               or sitrep_date)
+    # Resolve cumulative date: table title → period_end_date → notes → filename
+    cum_end = (
+        parse_french_date(raw_data["cumulative"].get("table_title", ""))
+        or raw_data["cumulative"].get("period_end_date", "")
+        or parse_french_date(raw_data["cumulative"].get("notes", ""))
+        or sitrep_date
+    )
+    cum_start = raw_data["cumulative"].get("period_start_date", "")
+
+    # Resolve new-cases dates: filename → period_end_date → notes
+    nc_end = (
+        sitrep_date
+        or raw_data["new_cases"].get("period_end_date", "")
+        or parse_french_date(raw_data["new_cases"].get("notes", ""))
+    )
+    nc_start = sitrep_date or raw_data["new_cases"].get("period_start_date", "")
 
     rows = []
 
@@ -216,8 +278,8 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") 
         if not _row_has_data(r):
             continue
         rows.append({
-            "count_start_date": sitrep_date,
-            "count_end_date":   sitrep_date,
+            "count_start_date": nc_start,
+            "count_end_date":   nc_end,
             "count_type":       "Nouveaux",
             "cases_suspect":    _nd(r.get("cas_suspects", "")),
             "cases_probable":   _nd(r.get("cas_probables", "")),
@@ -228,6 +290,7 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") 
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
             "sitrep_source":    source,
+            "is_aggregate":     _is_aggregate(r.get("zone_de_sante", ""), r.get("province", "")),
         })
 
     # ── Cumules
@@ -235,7 +298,7 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") 
         if not _row_has_data(r):
             continue
         rows.append({
-            "count_start_date": "",
+            "count_start_date": cum_start,
             "count_end_date":   cum_end,
             "count_type":       "Cumules",
             "cases_suspect":    _nd(r.get("cas_suspects", "")),
@@ -247,6 +310,7 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") 
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
             "sitrep_source":    source,
+            "is_aggregate":     _is_aggregate(r.get("zone_de_sante", ""), r.get("province", "")),
         })
 
     return pd.DataFrame(rows, columns=COMBINED_COLS)
@@ -350,13 +414,13 @@ def save_outputs(
 
     # ── CSV
     new_cases_df.to_csv(
-        output_dir / "new_cases_linelist.csv", index=False, encoding="utf-8-sig"
+        output_dir / "new_cases_counts.csv", index=False, encoding="utf-8-sig"
     )
     cumulative_df.to_csv(
-        output_dir / "cumulative_linelist.csv", index=False, encoding="utf-8-sig"
+        output_dir / "cumulative_counts.csv", index=False, encoding="utf-8-sig"
     )
     combined_df.to_csv(
-        output_dir / "combined_linelist.csv", index=False, encoding="utf-8-sig"
+        output_dir / "combined_counts.csv", index=False, encoding="utf-8-sig"
     )
 
     # ── Raw JSON (for auditing / re-running tests without an API call)
@@ -388,12 +452,17 @@ def _process_one(
     new_cases_df  = build_dataframe(data["new_cases"])
     # Post-extraction validation: discard cumulative table if it looks like an
     # alerts/investigation table.
-    # --- Level 1: table title check (fast, reliable) ---
+    # --- Level 1: table title check + data check ---
+    # Reject only when BOTH conditions hold: the title contains alert keywords
+    # AND none of the rows contain actual case-count data.  This prevents false
+    # rejection of hybrid tables that mention alerts but also carry case counts.
     cum_title_raw = data["cumulative"].get("table_title", "")
     cum_title_lc  = cum_title_raw.lower()
-    if any(kw in cum_title_lc for kw in _ALERT_TITLE_KEYWORDS):
+    title_looks_like_alerts = any(kw in cum_title_lc for kw in _ALERT_TITLE_KEYWORDS)
+    cum_rows_have_data = any(_row_has_data(r) for r in data["cumulative"].get("rows", []))
+    if title_looks_like_alerts and not cum_rows_have_data:
         print(f"{tag}WARNING: cumulative table rejected — title indicates alerts/"
-              f"investigation table: '{cum_title_raw}'")
+              f"investigation table and rows contain no case data: '{cum_title_raw}'")
         data["cumulative"]["rows"] = []
     # --- Level 2: row-level heuristic (catches tables whose title is neutral) ---
     cumul_rows = data["cumulative"].get("rows", [])
@@ -413,6 +482,16 @@ def _process_one(
                 break
         except (ValueError, TypeError):
             pass
+    # --- Level 3: guard against text-fallback rows when no tables exist ---
+    # If cumulative was cleared (alerts document) AND new_cases has no identified
+    # table title, any new_cases rows were synthesised purely from body text.
+    # These are unreliable; suppress them to avoid spurious Nouveaux rows.
+    if not data["cumulative"].get("rows") and not data["new_cases"].get("table_title", ""):
+        if data["new_cases"].get("rows"):
+            print(f"{tag}WARNING: new_cases rows suppressed — cumulative rejected as "
+                  "alerts table and new_cases has no identified table title "
+                  "(text-fallback rows discarded).")
+        data["new_cases"]["rows"] = []
     cumulative_df = build_dataframe(data["cumulative"])
     sitrep_date   = extract_date_from_filename(pdf_path)
     # Cascade: if filename has no date, try new_cases then cumulative table titles
@@ -420,7 +499,7 @@ def _process_one(
         sitrep_date = parse_french_date(data["new_cases"].get("table_title", ""))
     if not sitrep_date:
         sitrep_date = parse_french_date(data["cumulative"].get("table_title", ""))
-    combined_df   = build_combined_linelist(data, sitrep_date, source=pdf_path.stem)
+    combined_df   = build_combined_counts(data, sitrep_date, source=pdf_path.stem)
     print(f"{tag}Saving outputs → {output_dir.name}/")
     save_outputs(new_cases_df, cumulative_df, combined_df, data, output_dir)
     return combined_df, data, new_cases_df, cumulative_df
@@ -440,7 +519,7 @@ def save_processed(path: Path, processed: dict) -> None:
 
 
 def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
-    """Sort the master linelist chronologically by count_end_date, then count_type."""
+    """Sort the master counts table chronologically by count_end_date, then count_type."""
     tmp = df.copy()
     tmp["_sort_date"] = pd.to_datetime(tmp["count_end_date"], format="%d/%m/%Y", errors="coerce")
     tmp["_type_order"] = tmp["count_type"].map({"Nouveaux": 0, "Cumules": 1}).fillna(2).astype(int)
@@ -452,8 +531,8 @@ def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
-    """Append rows to master_combined_linelist.csv; return the full updated DataFrame."""
-    master_path = output_dir / "master_combined_linelist.csv"
+    """Append rows to master_combined_counts.csv; return the full updated DataFrame."""
+    master_path = output_dir / "master_combined_counts.csv"
     if master_path.exists():
         existing = pd.read_csv(master_path, dtype=str, encoding="utf-8-sig").fillna("")
         master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
@@ -463,6 +542,7 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
     output_dir.mkdir(parents=True, exist_ok=True)
     master.to_csv(master_path, index=False, encoding="utf-8-sig")
     return master
+
 
 
 def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) -> None:
