@@ -1,4 +1,4 @@
-# SitRep MVE RDC — Table Extraction Pipeline
+# SitRep BVD DRC — Table Extraction Pipeline
 
 Automatically extracts epidemiological data from INSP DRC Ebola situation report PDFs using Claude's visual PDF understanding.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SitRep MVE RDC — PDF Fetcher
+SitRep BVD DRC — PDF Fetcher
 ==============================
 Discovers and downloads INSP DRC MVE SitRep PDFs to a local archive.
 

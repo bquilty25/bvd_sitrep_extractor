@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-SitRep MVE RDC — Table Extraction Pipeline
+SitRep BVD DRC — Table Extraction Pipeline
 ============================================
 Extracts two tables from an INSP DRC situation report PDF using the Anthropic API:
   - new_cases  : the very first table (new / recent cases)

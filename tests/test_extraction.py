@@ -1,5 +1,5 @@
 """
-Test suite for SitRep MVE RDC extraction pipeline.
+Test suite for SitRep BVD DRC extraction pipeline.
 
 Tests are grouped into three categories:
   1. Unit tests  — pure logic from extract_sitrep.py (no API, no files needed)
