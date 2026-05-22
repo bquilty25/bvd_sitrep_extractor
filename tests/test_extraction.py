@@ -24,7 +24,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from extract_sitrep import (
     clean_json_text, build_dataframe, coerce_numerics,
     parse_french_date, extract_date_from_filename, build_combined_linelist, _nd,
-    COMBINED_COLS,
+    COMBINED_COLS, normalise_zone, _row_has_data,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -34,7 +34,6 @@ RAW_JSON      = OUTPUTS / "raw_extraction.json"
 NEW_CASES_CSV = OUTPUTS / "new_cases_linelist.csv"
 CUMUL_CSV     = OUTPUTS / "cumulative_linelist.csv"
 COMBINED_CSV  = OUTPUTS / "combined_linelist.csv"
-EXCEL_PATH    = OUTPUTS / "sitrep_extraction.xlsx"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -253,6 +252,72 @@ class TestBuildCombinedLinelist:
         cum = df[df["count_type"] == "Cumules"]
         assert (cum["cases_probable"] == "").all()
 
+    def test_sitrep_source_column_present(self, sample_raw):
+        df = build_combined_linelist(sample_raw, "20/05/2026", source="test_sitrep")
+        assert "sitrep_source" in df.columns
+        assert (df["sitrep_source"] == "test_sitrep").all()
+
+    def test_empty_rows_filtered(self):
+        """Rows with all-empty numeric fields must be dropped."""
+        _COLS = ["province", "zone_de_sante", "cas_suspects", "cas_probables",
+                 "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"]
+        raw = {
+            "new_cases": {
+                "table_title": "",
+                "columns": _COLS,
+                "rows": [
+                    {"province": "Ituri", "zone_de_sante": "Bunia",
+                     "cas_suspects": "10", "cas_probables": "", "cas_confirmes": "3",
+                     "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""},
+                    # all-empty row — should be dropped
+                    {"province": "Ituri", "zone_de_sante": "Rwampara",
+                     "cas_suspects": "", "cas_probables": "", "cas_confirmes": "",
+                     "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""},
+                ],
+                "notes": "",
+            },
+            "cumulative": {"table_title": "", "columns": _COLS, "rows": [], "notes": ""},
+        }
+        df = build_combined_linelist(raw, "20/05/2026")
+        assert len(df) == 1
+        assert df.iloc[0]["zone"] == "Bunia"
+
+
+class TestNormaliseZone:
+    def test_mungbwalu_normalised(self):
+        assert normalise_zone("Mungbwalu") == "Mongbwalu"
+
+    def test_bambu_case_insensitive(self):
+        assert normalise_zone("BAMBU") == "Bambu"
+
+    def test_unknown_zone_unchanged(self):
+        assert normalise_zone("Bunia") == "Bunia"
+
+    def test_strips_whitespace(self):
+        assert normalise_zone("  Bunia  ") == "Bunia"
+
+
+class TestRowHasData:
+    def test_returns_true_with_one_populated_field(self):
+        r = {"cas_suspects": "5", "cas_probables": "", "cas_confirmes": "",
+             "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""}
+        assert _row_has_data(r) is True
+
+    def test_returns_false_when_all_empty(self):
+        r = {"cas_suspects": "", "cas_probables": "", "cas_confirmes": "",
+             "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""}
+        assert _row_has_data(r) is False
+
+    def test_nd_sentinel_counts_as_empty(self):
+        r = {"cas_suspects": "ND", "cas_probables": "", "cas_confirmes": "",
+             "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""}
+        assert _row_has_data(r) is False
+
+    def test_zero_counts_as_data(self):
+        r = {"cas_suspects": "0", "cas_probables": "", "cas_confirmes": "",
+             "deces_suspects": "", "deces_probables": "", "deces_confirmes": ""}
+        assert _row_has_data(r) is True
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 2. SCHEMA TESTS  (require raw_extraction.json)
@@ -330,16 +395,16 @@ def combined():
 
 class TestOutputFiles:
     def test_new_cases_csv_exists(self):
-        assert NEW_CASES_CSV.exists()
+        if not NEW_CASES_CSV.exists():
+            pytest.skip("new_cases_linelist.csv not found — run extract_sitrep.py first")
 
     def test_cumulative_csv_exists(self):
-        assert CUMUL_CSV.exists()
+        if not CUMUL_CSV.exists():
+            pytest.skip("cumulative_linelist.csv not found — run extract_sitrep.py first")
 
     def test_combined_csv_exists(self):
-        assert COMBINED_CSV.exists()
-
-    def test_excel_exists(self):
-        assert EXCEL_PATH.exists()
+        if not COMBINED_CSV.exists():
+            pytest.skip("combined_linelist.csv not found — run extract_sitrep.py first")
 
     def test_new_cases_csv_readable(self, new_cases):
         assert new_cases is not None
@@ -350,22 +415,10 @@ class TestOutputFiles:
     def test_combined_csv_readable(self, combined):
         assert combined is not None
 
-    def test_excel_has_all_sheets(self):
-        xl = pd.ExcelFile(EXCEL_PATH)
-        assert "Nouveaux cas" in xl.sheet_names
-        assert "Cumulatif (Tableau 3)" in xl.sheet_names
-        assert "Combined linelist" in xl.sheet_names
-
-    def test_excel_sheets_match_csvs(self, new_cases, cumulative, combined):
-        nc_xl  = pd.read_excel(EXCEL_PATH, sheet_name="Nouveaux cas")
-        cum_xl = pd.read_excel(EXCEL_PATH, sheet_name="Cumulatif (Tableau 3)")
-        cb_xl  = pd.read_excel(EXCEL_PATH, sheet_name="Combined linelist")
-        assert len(nc_xl)  == len(new_cases),  "Excel new-cases row count mismatch"
-        assert len(cum_xl) == len(cumulative), "Excel cumulative row count mismatch"
-        assert len(cb_xl)  == len(combined),   "Excel combined row count mismatch"
-
     def test_csvs_are_valid_utf8(self):
         for path in (NEW_CASES_CSV, CUMUL_CSV, COMBINED_CSV):
+            if not path.exists():
+                pytest.skip(f"{path.name} not found — run extract_sitrep.py first")
             path.read_bytes().decode("utf-8-sig")  # raises if invalid
 
 

@@ -111,7 +111,7 @@ Pass multiple PDFs to process them all in one run and produce a combined master 
 python3 extract_sitrep.py SitRep_001.pdf SitRep_002.pdf SitRep_006.pdf
 ```
 
-Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_linelist.csv` and `master_sitrep_extraction.xlsx` are written at the `outputs/` root.
+Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_linelist.csv` is written at the `outputs/` root.
 
 ---
 
@@ -146,8 +146,7 @@ Written to `outputs/` (single PDF) or `outputs/<pdf_stem>/` (batch / update mode
 |---|---|
 | `new_cases_linelist.csv` | New-cases table extracted verbatim from the PDF |
 | `cumulative_linelist.csv` | Cumulative table (Tableau III) extracted verbatim |
-| `combined_linelist.csv` | Both tables in a single standardised 11-column linelist |
-| `sitrep_extraction.xlsx` | All three tables as separate sheets in one workbook |
+| `combined_linelist.csv` | Both tables in a single standardised 12-column linelist |
 | `raw_extraction.json` | Raw JSON returned by Claude — useful for auditing and re-running tests |
 
 ### Master files (batch / update mode)
@@ -156,8 +155,7 @@ Written to `outputs/`.
 
 | File | Contents |
 |---|---|
-| `master_combined_linelist.csv` | All SitReps concatenated into one standardised linelist |
-| `master_sitrep_extraction.xlsx` | Same, as an Excel workbook |
+| `master_combined_linelist.csv` | All SitReps concatenated into one standardised linelist, sorted chronologically |
 | `processed.json` | Registry of processed PDF filenames and timestamps |
 
 ### PDF archive
@@ -177,8 +175,9 @@ Downloaded PDFs are stored in `pdfs/` (gitignored). A `pdfs/manifest.json` recor
 | `deaths_suspected` | Deaths among suspected cases |
 | `deaths_probable` | Deaths among probable cases |
 | `deaths_confirmed` | Deaths among confirmed cases |
-| `zone` | Health zone (*zone de santé*) |
+| `zone` | Health zone (*zone de santé*), normalised to a canonical spelling |
 | `province` | Province |
+| `sitrep_source` | Stem of the source PDF filename — used to trace each row back to its document |
 
 > Cells that appear as `ND` (Non Disponible) in the source PDF are mapped to blank in the combined linelist. Subtotal and total rows are retained as-is.
 
@@ -194,7 +193,7 @@ pytest tests/ -v
 
 Unit tests run without an Anthropic API call. Schema and data tests require the outputs to exist — run the extraction at least once first.
 
-Expected result: **76 passed, 1 skipped** (the cross-table numeric comparison is skipped by design because the two source tables use different French column names with no overlap).
+Expected result: **44 passed** (unit tests only — schema and data tests are skipped until the pipeline has been run at least once against a real PDF).
 
 ---
 

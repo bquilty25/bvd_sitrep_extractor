@@ -33,9 +33,8 @@ import pandas as pd
 
 # ── Configuration ──────────────────────────────────────────────────────────────
 
-MODEL           = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-MAX_TOKENS_TEXT = 32000  # Step 1: full-text extraction (can be long)
-MAX_TOKENS      = 16000  # Step 2: structured table extraction
+MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
+MAX_TOKENS = 48000  # Full text + structured JSON in one response
 
 # ── Combined linelist schema ─────────────────────────────────────────────────
 
@@ -43,8 +42,16 @@ COMBINED_COLS = [
     "count_start_date", "count_end_date", "count_type",
     "cases_suspect", "cases_probable", "cases_confirmed",
     "deaths_suspected", "deaths_probable", "deaths_confirmed",
-    "zone", "province",
+    "zone", "province", "sitrep_source",
 ]
+
+# Keywords that identify an alerts/investigation table that must NOT be treated
+# as a cumulative case-count table.  Checked against the table_title (lowercase).
+_ALERT_TITLE_KEYWORDS = (
+    "alertes", "recues", "reçues", "validees", "validées",
+    "investiguees", "investiguées", "enquêtées", "notifiees",
+    "notifiées", "investigation", "suivi des alertes",
+)
 
 FRENCH_MONTHS = {
     "janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4,
@@ -53,23 +60,42 @@ FRENCH_MONTHS = {
     "décembre": 12, "decembre": 12,
 }
 
-# ── Extraction prompts ────────────────────────────────────────────────────────
+# ── Zone name normalisation ───────────────────────────────────────────────────
+# Keys are lowercase; values are the canonical display spelling.
+ZONE_NAME_MAP: dict[str, str] = {
+    "mungbwalu": "Mongbwalu",
+    "bambu":     "Bambu",
+}
 
-# Step 1: extract raw text from the PDF
-TEXT_EXTRACTION_PROMPT = """\
-Extract all text from this PDF document exactly as it appears on every page. \
-Preserve the structure of tables using whitespace or pipe characters to align columns. \
-Do not summarise, interpret, or omit any content. \
-Output the complete raw textual content of the document."""
 
-# Step 2: parse structured table data from the extracted text
-TABLE_EXTRACTION_PROMPT = """\
-You are an expert epidemiological data extractor. The following text has been \
-extracted from a French-language situation report (Rapport de Situation / SitRep) \
-about MVE (Maladie à Virus Ebola or Marburg) in the DRC \
-(République Démocratique du Congo).
+def normalise_zone(zone: str) -> str:
+    """Return the canonical spelling for a health-zone name, else the original."""
+    stripped = zone.strip()
+    return ZONE_NAME_MAP.get(stripped.lower(), stripped)
 
-Find and normalise EXACTLY two tables, returning them as a single valid JSON object.
+# ── Extraction prompt (single visual pass) ────────────────────────────────────
+
+# One API call: Claude sees the PDF visually, transcribes all text, then
+# extracts the two tables directly from the visual layout.
+_TABLES_SEPARATOR = "---TABLES_JSON---"
+
+EXTRACTION_PROMPT = f"""\
+You are an expert epidemiological data extractor processing a French-language \
+situation report (Rapport de Situation / SitRep) about MVE (Maladie à Virus \
+Ebola or Marburg) in the DRC (République Démocratique du Congo).
+
+PART 1 — FULL DOCUMENT TRANSCRIPTION:
+Transcribe the complete text of this PDF exactly as it appears on every page. \
+Preserve table structure using whitespace or pipe characters to align columns. \
+Do not summarise, interpret, or omit any content.
+
+When you have finished the transcription, output this exact line by itself:
+{_TABLES_SEPARATOR}
+
+PART 2 — STRUCTURED TABLE EXTRACTION (read from the PDF visuals, not from the
+transcription above):
+Immediately after the separator, output ONLY a valid JSON object — no markdown \
+fences, no commentary — containing EXACTLY two keys.
 
 TABLE 1 — key "new_cases":
   The table showing the most recent daily case counts (nouvelles données, nouveaux \
@@ -80,6 +106,12 @@ TRANSPOSE it so each output row represents one zone.
 TABLE 2 — key "cumulative":
   The table with cumulative totals (Tableau 3, données cumulatives / cumulées, or \
 similar). Apply the same transposition rule if zones are columns.
+  CRITICAL — ALERTS TABLE REJECTION: Some documents contain a table tracking alert
+  investigations, NOT case counts. Return "rows": [] for the cumulative key if the
+  table's actual column headers contain words like: alertes, reçues, validées,
+  investiguées, enquêtées, notifiées. Only extract a cumulative table whose column
+  headers clearly refer to CASE COUNTS (cas suspects, cas confirmés, décès).
+  If no such table exists, return "rows": [].
 
 For BOTH tables, normalise every row to these EXACT keys — use empty string "" for \
 any field not present in the source, and preserve zeros as "0":
@@ -95,8 +127,6 @@ any field not present in the source, and preserve zeros as "0":
 Also provide:
   "table_title" : exact title string from the document (empty string if none found)
   "notes"       : any footnote or asterisk text below the table (empty string if none)
-
-Return ONLY the JSON — no markdown fences, no commentary, nothing else.
 
 Schema:
 {{
@@ -158,7 +188,18 @@ def _nd(value: str) -> str:
     return "" if str(value).strip().upper() in ("ND", "N", "N/A", "-", "—") else str(value).strip()
 
 
-def build_combined_linelist(raw_data: dict, sitrep_date: str) -> pd.DataFrame:
+_NUMERIC_FIELDS = (
+    "cas_suspects", "cas_probables", "cas_confirmes",
+    "deces_suspects", "deces_probables", "deces_confirmes",
+)
+
+
+def _row_has_data(r: dict) -> bool:
+    """Return True if at least one case/death field contains a non-empty value."""
+    return any(_nd(r.get(f, "")) != "" for f in _NUMERIC_FIELDS)
+
+
+def build_combined_linelist(raw_data: dict, sitrep_date: str, source: str = "") -> pd.DataFrame:
     """
     Merge new_cases and cumulative into a single standardised linelist.
     count_type = 'Nouveaux'  for the first table (new cases, single reporting day)
@@ -172,6 +213,8 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str) -> pd.DataFrame:
 
     # ── Nouveaux
     for r in raw_data["new_cases"]["rows"]:
+        if not _row_has_data(r):
+            continue
         rows.append({
             "count_start_date": sitrep_date,
             "count_end_date":   sitrep_date,
@@ -182,12 +225,15 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str) -> pd.DataFrame:
             "deaths_suspected": _nd(r.get("deces_suspects", "")),
             "deaths_probable":  _nd(r.get("deces_probables", "")),
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
-            "zone":             r.get("zone_de_sante", ""),
+            "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
+            "sitrep_source":    source,
         })
 
     # ── Cumules
     for r in raw_data["cumulative"]["rows"]:
+        if not _row_has_data(r):
+            continue
         rows.append({
             "count_start_date": "",
             "count_end_date":   cum_end,
@@ -198,8 +244,9 @@ def build_combined_linelist(raw_data: dict, sitrep_date: str) -> pd.DataFrame:
             "deaths_suspected": _nd(r.get("deces_suspects", "")),
             "deaths_probable":  _nd(r.get("deces_probables", "")),
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
-            "zone":             r.get("zone_de_sante", ""),
+            "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
+            "sitrep_source":    source,
         })
 
     return pd.DataFrame(rows, columns=COMBINED_COLS)
@@ -219,11 +266,18 @@ def clean_json_text(raw: str) -> str:
     return raw.strip()
 
 
-def _extract_full_text(client: anthropic.Anthropic, pdf_b64: str) -> str:
-    """Step 1: extract raw text from the PDF via Claude's document vision."""
+def extract_tables(client: anthropic.Anthropic, pdf_b64: str) -> dict:
+    """
+    Single-step extraction pipeline: send the PDF to Claude once.
+    Claude transcribes the full text, then extracts the two epidemiological
+    tables directly from the PDF visuals. Returns the parsed dict with a
+    'full_text' key for auditing.
+    """
+    print("  Extracting text and tables from PDF visuals …")
     with client.messages.stream(
         model=MODEL,
-        max_tokens=MAX_TOKENS_TEXT,
+        max_tokens=MAX_TOKENS,
+        temperature=0,
         messages=[
             {
                 "role": "user",
@@ -236,39 +290,24 @@ def _extract_full_text(client: anthropic.Anthropic, pdf_b64: str) -> str:
                             "data": pdf_b64,
                         },
                     },
-                    {"type": "text", "text": TEXT_EXTRACTION_PROMPT},
+                    {"type": "text", "text": EXTRACTION_PROMPT},
                 ],
             }
         ],
     ) as stream:
-        return stream.get_final_text()
+        raw_response = stream.get_final_text()
 
+    # Split on the separator: everything before is the transcribed text,
+    # everything after is the JSON.
+    if _TABLES_SEPARATOR in raw_response:
+        full_text, json_part = raw_response.split(_TABLES_SEPARATOR, 1)
+    else:
+        # Fallback: assume the whole response is JSON (separator was omitted)
+        full_text = ""
+        json_part = raw_response
 
-def _extract_tables_from_text(client: anthropic.Anthropic, text: str) -> dict:
-    """Step 2: parse structured table JSON from plain extracted text."""
-    prompt = TABLE_EXTRACTION_PROMPT + "\n\n---\nDOCUMENT TEXT:\n\n" + text
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        messages=[{"role": "user", "content": prompt}],
-    ) as stream:
-        raw_text = stream.get_final_text()
-    cleaned = clean_json_text(raw_text)
-    return json.loads(cleaned)
-
-
-def extract_tables(client: anthropic.Anthropic, pdf_b64: str) -> dict:
-    """
-    Two-step extraction pipeline:
-      1. Send the PDF to Claude to extract full document text.
-      2. Send that text back to Claude to parse the two epidemiological tables.
-    Returns the parsed dict with an additional 'full_text' key for auditing.
-    """
-    print("  Step 1/2 — Extracting full document text …")
-    full_text = _extract_full_text(client, pdf_b64)
-    print("  Step 2/2 — Parsing epidemiological tables from text …")
-    data = _extract_tables_from_text(client, full_text)
-    data["full_text"] = full_text
+    data = json.loads(clean_json_text(json_part.strip()))
+    data["full_text"] = full_text.strip()
     return data
 
 
@@ -320,14 +359,6 @@ def save_outputs(
         output_dir / "combined_linelist.csv", index=False, encoding="utf-8-sig"
     )
 
-    # ── Excel (three sheets)
-    with pd.ExcelWriter(
-        output_dir / "sitrep_extraction.xlsx", engine="openpyxl"
-    ) as writer:
-        new_cases_df.to_excel(writer, sheet_name="Nouveaux cas", index=False)
-        cumulative_df.to_excel(writer, sheet_name="Cumulatif (Tableau 3)", index=False)
-        combined_df.to_excel(writer, sheet_name="Combined linelist", index=False)
-
     # ── Raw JSON (for auditing / re-running tests without an API call)
     with open(output_dir / "raw_extraction.json", "w", encoding="utf-8") as fh:
         json.dump(raw_data, fh, ensure_ascii=False, indent=2)
@@ -351,10 +382,37 @@ def _process_one(
     tag = f"[{label}] " if label else ""
     print(f"{tag}Loading PDF  : {pdf_path.name}  ({pdf_path.stat().st_size / 1024:.0f} KB)")
     pdf_b64 = load_pdf_b64(pdf_path)
-    print(f"{tag}Calling Claude ({MODEL}) — 2-step extraction …")
+    print(f"{tag}Calling Claude ({MODEL}) — visual extraction …")
     data = extract_tables(client, pdf_b64)
     print(f"{tag}Building DataFrames …")
     new_cases_df  = build_dataframe(data["new_cases"])
+    # Post-extraction validation: discard cumulative table if it looks like an
+    # alerts/investigation table.
+    # --- Level 1: table title check (fast, reliable) ---
+    cum_title_raw = data["cumulative"].get("table_title", "")
+    cum_title_lc  = cum_title_raw.lower()
+    if any(kw in cum_title_lc for kw in _ALERT_TITLE_KEYWORDS):
+        print(f"{tag}WARNING: cumulative table rejected — title indicates alerts/"
+              f"investigation table: '{cum_title_raw}'")
+        data["cumulative"]["rows"] = []
+    # --- Level 2: row-level heuristic (catches tables whose title is neutral) ---
+    cumul_rows = data["cumulative"].get("rows", [])
+    for row in cumul_rows:
+        try:
+            prob_str = row.get("cas_probables", "").strip()
+            susp_str = row.get("cas_suspects",  "").strip()
+            if prob_str.upper() in ("", "ND", "N/A", "-", "—") or susp_str.upper() in ("", "ND", "N/A", "-", "—"):
+                continue
+            prob = float(prob_str)
+            susp = float(susp_str)
+            if prob > 0 and susp > 0 and prob > susp * 3:
+                print(f"{tag}WARNING: cumulative table rejected — probable ({prob:.0f}) > "
+                      f"3× suspect ({susp:.0f}) in zone ‘{row.get('zone_de_sante','')}’. "
+                      "Likely an alerts table, not a case-count table.")
+                data["cumulative"]["rows"] = []
+                break
+        except (ValueError, TypeError):
+            pass
     cumulative_df = build_dataframe(data["cumulative"])
     sitrep_date   = extract_date_from_filename(pdf_path)
     # Cascade: if filename has no date, try new_cases then cumulative table titles
@@ -362,7 +420,7 @@ def _process_one(
         sitrep_date = parse_french_date(data["new_cases"].get("table_title", ""))
     if not sitrep_date:
         sitrep_date = parse_french_date(data["cumulative"].get("table_title", ""))
-    combined_df   = build_combined_linelist(data, sitrep_date)
+    combined_df   = build_combined_linelist(data, sitrep_date, source=pdf_path.stem)
     print(f"{tag}Saving outputs → {output_dir.name}/")
     save_outputs(new_cases_df, cumulative_df, combined_df, data, output_dir)
     return combined_df, data, new_cases_df, cumulative_df
@@ -381,6 +439,18 @@ def save_processed(path: Path, processed: dict) -> None:
     path.write_text(json.dumps(processed, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
+    """Sort the master linelist chronologically by count_end_date, then count_type."""
+    tmp = df.copy()
+    tmp["_sort_date"] = pd.to_datetime(tmp["count_end_date"], format="%d/%m/%Y", errors="coerce")
+    tmp["_type_order"] = tmp["count_type"].map({"Nouveaux": 0, "Cumules": 1}).fillna(2).astype(int)
+    tmp = tmp.sort_values(
+        ["_sort_date", "_type_order", "sitrep_source", "zone"],
+        na_position="last",
+    )
+    return tmp.drop(columns=["_sort_date", "_type_order"]).reset_index(drop=True)
+
+
 def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
     """Append rows to master_combined_linelist.csv; return the full updated DataFrame."""
     master_path = output_dir / "master_combined_linelist.csv"
@@ -389,6 +459,7 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
         master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
     else:
         master = new_df.copy()
+    master = _sort_master(master)
     output_dir.mkdir(parents=True, exist_ok=True)
     master.to_csv(master_path, index=False, encoding="utf-8-sig")
     return master
@@ -428,10 +499,6 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
 
     new_rows_df = pd.concat(all_new, ignore_index=True)
     master_df   = append_to_master(new_rows_df, output_dir)
-
-    master_xlsx = output_dir / "master_sitrep_extraction.xlsx"
-    with pd.ExcelWriter(master_xlsx, engine="openpyxl") as writer:
-        master_df.to_excel(writer, sheet_name="Master combined", index=False)
 
     save_processed(processed_path, processed)
 
@@ -557,13 +624,10 @@ def main() -> None:
             print()
 
         print("Building master linelist …")
-        master_df = pd.concat(all_combined, ignore_index=True)
+        master_df = _sort_master(pd.concat(all_combined, ignore_index=True))
 
-        master_csv  = output_dir / "master_combined_linelist.csv"
-        master_xlsx = output_dir / "master_sitrep_extraction.xlsx"
+        master_csv = output_dir / "master_combined_linelist.csv"
         master_df.to_csv(master_csv, index=False, encoding="utf-8-sig")
-        with pd.ExcelWriter(master_xlsx, engine="openpyxl") as writer:
-            master_df.to_excel(writer, sheet_name="Master combined", index=False)
 
         print()
         print("═" * 55)
@@ -572,9 +636,7 @@ def main() -> None:
         print(f"    Nouveaux  : {(master_df['count_type'] == 'Nouveaux').sum()}")
         print(f"    Cumules   : {(master_df['count_type'] == 'Cumules').sum()}")
         print("═" * 55)
-        print(f"\nMaster outputs written to: {output_dir}/")
-        print(f"  {master_csv.name}")
-        print(f"  {master_xlsx.name}")
+        print(f"\nMaster output written to: {output_dir}/{master_csv.name}")
 
 
 if __name__ == "__main__":
