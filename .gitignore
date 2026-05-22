@@ -1,0 +1,22 @@
+# Environment / secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Outputs (generated — not tracked)
+outputs/
+
+# PDF archive (large binary files — store locally, do not commit)
+pdfs/
+
+# OS
+.DS_Store
+Thumbs.db
