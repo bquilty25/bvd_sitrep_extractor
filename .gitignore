@@ -1,5 +1,6 @@
 # Environment / secrets
 .env
+.claude
 
 # Python
 __pycache__/
@@ -13,6 +14,10 @@ env/
 
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
+
+# Generated outputs (CSVs, PNGs, HTML reports — rebuilt by the pipeline)
+outputs/
+scripts/outputs/
 
 # OS
 .DS_Store
