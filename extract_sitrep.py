@@ -21,6 +21,7 @@ Usage:
 import argparse
 import base64
 import json
+import json_repair
 import os
 import re
 import sys
@@ -33,7 +34,8 @@ import pandas as pd
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
-MAX_TOKENS = 48000  # Full text + structured JSON in one response
+MAX_TOKENS_JSON = 8192   # JSON-only table extraction — well within model limits
+MAX_TOKENS_TEXT = 48000  # Full document transcription
 
 # ── Combined linelist schema ─────────────────────────────────────────────────
 
@@ -98,29 +100,16 @@ def normalise_zone(zone: str) -> str:
     stripped = zone.strip()
     return ZONE_NAME_MAP.get(stripped.lower(), stripped)
 
-# ── Extraction prompt (single visual pass) ────────────────────────────────────
+# ── Extraction prompts (two focused API calls) ──────────────────────────────
 
-# One API call: Claude sees the PDF visually, transcribes all text, then
-# extracts the two tables directly from the visual layout.
-_TABLES_SEPARATOR = "---TABLES_JSON---"
-
-EXTRACTION_PROMPT = f"""\
+# Call 1: structured JSON extraction only — short, predictable response.
+JSON_EXTRACTION_PROMPT = """\
 You are an expert epidemiological data extractor processing a French-language \
 situation report (Rapport de Situation / SitRep) about MVE (Maladie à Virus \
 Ebola or Marburg) in the DRC (République Démocratique du Congo).
 
-PART 1 — FULL DOCUMENT TRANSCRIPTION:
-Transcribe the complete text of this PDF exactly as it appears on every page. \
-Preserve table structure using whitespace or pipe characters to align columns. \
-Do not summarise, interpret, or omit any content.
-
-When you have finished the transcription, output this exact line by itself:
-{_TABLES_SEPARATOR}
-
-PART 2 — STRUCTURED TABLE EXTRACTION (read from the PDF visuals, not from the
-transcription above):
-Immediately after the separator, output ONLY a valid JSON object — no markdown \
-fences, no commentary — containing EXACTLY two keys.
+Output ONLY a valid JSON object — no markdown fences, no commentary — \
+containing EXACTLY two keys. Read directly from the PDF visuals.
 
 TABLE 1 — key "new_cases":
   The table showing the most recent daily case counts (nouvelles données, nouveaux \
@@ -154,11 +143,19 @@ any field not present in the source, and preserve zeros as "0":
 
 Also provide for EACH table:
   "table_title"      : exact title string from the document (empty string if none found)
+  "reporting_date"   : the 'Date de rapportage' / 'Date du rapport' / 'Date de rédaction'
+                       from the document header info-box, in DD/MM/YYYY format.
+                       Empty string if no such field exists in the header.
   "period_end_date"  : end date of this table's reporting period in DD/MM/YYYY format.
-                       Scan the table title, column headers, body text, document header,
-                       and phrases like 'au 13 mai 2026', 'en date du', 'cumul au',
-                       'période du ... au ...'. Empty string ONLY if genuinely absent
-                       from the entire document.
+                       Use this PRIORITY ORDER — stop at the first that applies:
+                       1. A date stated directly in or immediately above the table
+                          (e.g. column header 'au 20 mai 2026', title 'cumul au ...').
+                       2. The 'Date de rapportage' / 'Date du rapport' from the document
+                          header — this is when the data was compiled and takes priority
+                          over period-range phrases in the body narrative.
+                       3. Body-text phrases: 'en date du', 'cumul au', 'au DD mois YYYY',
+                          'période du ... au ...'.
+                       Empty string ONLY if genuinely absent from the entire document.
   "period_start_date": start date of the reporting period in DD/MM/YYYY format if stated
                        (e.g. from 'du 1er Avril 2026'). Empty string if not stated.
   "notes"            : any footnote or asterisk text below the table (empty string if none)
@@ -173,31 +170,40 @@ TEXT FALLBACK FOR ROW FIELDS:
   document for that table's period.
 
 Schema:
-{{
-  "new_cases": {{
+{
+  "new_cases": {
     "table_title": "...",
+    "reporting_date": "DD/MM/YYYY or empty",
     "period_end_date": "DD/MM/YYYY or empty",
     "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
                 "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
     "rows": [
-      {{"province": "...", "zone_de_sante": "...", "cas_suspects": "...",
+      {"province": "...", "zone_de_sante": "...", "cas_suspects": "...",
         "cas_probables": "...", "cas_confirmes": "...", "deces_suspects": "...",
-        "deces_probables": "...", "deces_confirmes": "..."}},
+        "deces_probables": "...", "deces_confirmes": "..."},
       ...
     ],
     "notes": "..."
-  }},
-  "cumulative": {{
+  },
+  "cumulative": {
     "table_title": "...",
+    "reporting_date": "DD/MM/YYYY or empty",
     "period_end_date": "DD/MM/YYYY or empty",
     "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
                 "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
     "rows": [...],
     "notes": "..."
-  }}
-}}
+  }
+}
+"""
+
+# Call 2: full document transcription for auditing (optional, no JSON).
+TEXT_TRANSCRIPTION_PROMPT = """\
+Transcribe the complete text of this PDF exactly as it appears on every page. \
+Preserve table structure using whitespace or pipe characters to align columns. \
+Do not summarise, interpret, or omit any content.
 """
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -254,18 +260,20 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
     count_type = 'Cumules'   for Table 3 (cumulative up to the date in its title)
     Expects normalised keys from TABLE_EXTRACTION_PROMPT.
     """
-    # Resolve cumulative date: table title → period_end_date → notes → filename
+    # Resolve cumulative date: table title → reporting_date → period_end_date → notes → filename
     cum_end = (
         parse_french_date(raw_data["cumulative"].get("table_title", ""))
+        or raw_data["cumulative"].get("reporting_date", "")
         or raw_data["cumulative"].get("period_end_date", "")
         or parse_french_date(raw_data["cumulative"].get("notes", ""))
         or sitrep_date
     )
     cum_start = raw_data["cumulative"].get("period_start_date", "")
 
-    # Resolve new-cases dates: filename → period_end_date → notes
+    # Resolve new-cases dates: filename → reporting_date → period_end_date → notes
     nc_end = (
         sitrep_date
+        or raw_data["new_cases"].get("reporting_date", "")
         or raw_data["new_cases"].get("period_end_date", "")
         or parse_french_date(raw_data["new_cases"].get("notes", ""))
     )
@@ -330,48 +338,92 @@ def clean_json_text(raw: str) -> str:
     return raw.strip()
 
 
-def extract_tables(client: anthropic.Anthropic, pdf_b64: str) -> dict:
+def _stream_with_retry(
+    client: anthropic.Anthropic,
+    prompt: str,
+    pdf_b64: str,
+    max_tokens: int,
+    label: str,
+) -> str:
     """
-    Single-step extraction pipeline: send the PDF to Claude once.
-    Claude transcribes the full text, then extracts the two epidemiological
-    tables directly from the PDF visuals. Returns the parsed dict with a
-    'full_text' key for auditing.
+    Send one prompt + PDF to Claude via streaming and return the response text.
+    Retries once on any network/API error.
     """
-    print("  Extracting text and tables from PDF visuals …")
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=MAX_TOKENS,
-        temperature=0,
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "document",
-                        "source": {
-                            "type": "base64",
-                            "media_type": "application/pdf",
-                            "data": pdf_b64,
-                        },
+    messages = [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "document",
+                    "source": {
+                        "type": "base64",
+                        "media_type": "application/pdf",
+                        "data": pdf_b64,
                     },
-                    {"type": "text", "text": EXTRACTION_PROMPT},
-                ],
-            }
-        ],
-    ) as stream:
-        raw_response = stream.get_final_text()
+                },
+                {"type": "text", "text": prompt},
+            ],
+        }
+    ]
+    last_exc: Exception | None = None
+    for attempt in range(1, 3):
+        if attempt > 1:
+            print(f"  Retrying {label} (attempt {attempt}) …")
+        try:
+            with client.messages.stream(
+                model=MODEL, max_tokens=max_tokens, temperature=0, messages=messages,
+            ) as stream:
+                text = stream.get_final_text()
+                stop_reason = stream.get_final_message().stop_reason
+            if stop_reason == "max_tokens":
+                print(f"  WARNING: {label} response truncated (max_tokens).")
+            return text
+        except Exception as exc:
+            last_exc = exc
+            print(f"  WARNING: {type(exc).__name__} on {label} attempt {attempt}: {exc}")
+    raise ValueError(f"{label} failed after 2 attempts: {last_exc}") from last_exc
 
-    # Split on the separator: everything before is the transcribed text,
-    # everything after is the JSON.
-    if _TABLES_SEPARATOR in raw_response:
-        full_text, json_part = raw_response.split(_TABLES_SEPARATOR, 1)
+
+def extract_tables(
+    client: anthropic.Anthropic, pdf_b64: str, *, include_full_text: bool = True
+) -> dict:
+    """
+    Two-call extraction pipeline.
+
+    Call 1 — JSON tables only: short, focused prompt → small, reliable response.
+      Uses MAX_TOKENS_JSON (8192) so truncation is essentially impossible.
+    Call 2 — Full transcription (optional): stored in raw_extraction.json for auditing.
+      Uses MAX_TOKENS_TEXT (48000). Failures here are non-fatal.
+
+    Splitting the calls eliminates the max_tokens truncation and separator-splitting
+    fragility of the previous single-pass approach.
+    """
+    # ── Call 1: structured JSON ───────────────────────────────────────────────
+    print("  Extracting structured tables (JSON) …")
+    raw_json = _stream_with_retry(
+        client, JSON_EXTRACTION_PROMPT, pdf_b64, MAX_TOKENS_JSON, label="JSON extraction"
+    )
+    cleaned = clean_json_text(raw_json.strip())
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        print(f"  WARNING: JSON parse error: {exc}. Attempting repair …")
+        data = json_repair.loads(cleaned)
+
+    # ── Call 2: full text transcription (optional) ────────────────────────────
+    if include_full_text:
+        print("  Transcribing full document text …")
+        try:
+            data["full_text"] = _stream_with_retry(
+                client, TEXT_TRANSCRIPTION_PROMPT, pdf_b64, MAX_TOKENS_TEXT,
+                label="text transcription",
+            )
+        except Exception as exc:
+            print(f"  WARNING: transcription failed ({exc}). Continuing without full_text.")
+            data["full_text"] = ""
     else:
-        # Fallback: assume the whole response is JSON (separator was omitted)
-        full_text = ""
-        json_part = raw_response
+        data["full_text"] = ""
 
-    data = json.loads(clean_json_text(json_part.strip()))
-    data["full_text"] = full_text.strip()
     return data
 
 
@@ -647,7 +699,7 @@ def main() -> None:
             "  export ANTHROPIC_API_KEY='sk-ant-...'"
         )
 
-    client = anthropic.Anthropic(api_key=api_key)
+    client = anthropic.Anthropic(api_key=api_key, timeout=600.0)
 
     # ── Update mode: process new PDFs from local archive
     if args.update:

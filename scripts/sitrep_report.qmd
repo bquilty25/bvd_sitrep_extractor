@@ -43,7 +43,7 @@ df <- df_raw |>
     suspect     = as.numeric(cases_suspect),
     probable    = as.numeric(cases_probable),
     confirmed   = as.numeric(cases_confirmed),
-    deaths      = as.numeric(deaths_suspected),
+    deaths      = coalesce(as.numeric(deaths_suspected), as.numeric(deaths_probable)),
     is_agg      = (is_aggregate == "TRUE"),
     unconfirmed = coalesce(suspect, 0L) + coalesce(probable, 0L)
   )
@@ -57,7 +57,7 @@ ZONE_LEVELS <- c(
 PAL <- c(
   "Suspect/probable cases" = "#56B4E9",
   "Confirmed cases"        = "#D55E00",
-  "Suspected deaths"       = "#404040"
+  "Outbreak deaths"        = "#404040"
 )
 
 int_breaks <- function(x) unique(floor(pretty(x)))
@@ -89,7 +89,8 @@ totals <- df |>
   group_by(date) |>
   slice_max(order_by = unconfirmed, n = 1, with_ties = FALSE) |>
   ungroup() |>
-  arrange(date)
+  arrange(date) |>
+  mutate(deaths = cummax(replace_na(deaths, 0L)))
 
 zone_ts <- df |>
   filter(count_type == "Cumules", !is_agg, zone %in% ZONE_LEVELS) |>
@@ -100,11 +101,30 @@ zone_ts <- df |>
   arrange(zone, date) |>
   group_by(zone) |>
   mutate(
+    # Flag raw downward revisions before enforcing monotonicity
+    confirmed_raw   = confirmed,
+    unconfirmed_raw = unconfirmed,
+    rev_confirmed   = confirmed   < lag(cummax(replace_na(confirmed,   0L)), default = 0L),
+    rev_unconfirmed = unconfirmed < lag(cummax(replace_na(unconfirmed, 0L)), default = 0L),
     unconfirmed = cummax(replace_na(unconfirmed, 0L)),
     confirmed   = cummax(replace_na(confirmed,   0L)),
     deaths      = cummax(replace_na(deaths,      0L))
   ) |>
   ungroup()
+
+# Warn about any downward revisions that cummax suppressed
+revisions <- zone_ts |>
+  filter(rev_confirmed | rev_unconfirmed) |>
+  transmute(
+    zone, date,
+    confirmed_raw, confirmed,
+    unconfirmed_raw, unconfirmed
+  )
+if (nrow(revisions) > 0) {
+  message("NOTE: cummax suppressed ", nrow(revisions),
+          " downward revision(s) in cumulative counts:")
+  print(revisions)
+}
 
 zone_new <- df |>
   filter(count_type == "Nouveaux", !is_agg, zone %in% ZONE_LEVELS) |>
@@ -147,13 +167,50 @@ n_zones      <- n_distinct(zone_ts$zone)
 n_provinces  <- n_distinct(zone_ts$province)
 ```
 
+```{r}
+#| label: load-kraemer
+# Kraemer lab canonical name → this extraction zone name
+KRAEMER_NAME_MAP <- c("Mongbalu" = "Mongbwalu", "Nyakunde" = "Nyankunde")
+
+read_kraemer_long <- function(filename) {
+  read_csv(
+    here::here("Ebola_DRC_2026", "build", "long", filename),
+    col_types      = cols(.default = "c"),
+    show_col_types = FALSE
+  )
+}
+
+kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases.csv") |>
+  rename(confirmed = cumulative_confirmed_cases) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__cumulative_suspected_cases.csv") |>
+      rename(suspected = cumulative_suspected_cases),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__cumulative_suspected_deaths.csv") |>
+      rename(deaths = cumulative_suspected_deaths),
+    by = c("nom", "date")
+  ) |>
+  mutate(
+    zone      = recode(nom, !!!KRAEMER_NAME_MAP),
+    date      = as.Date(date),
+    confirmed = suppressWarnings(as.numeric(confirmed)),
+    suspected = suppressWarnings(as.numeric(suspected)),
+    deaths    = suppressWarnings(as.numeric(deaths)),
+    source    = "Kraemer lab"
+  ) |>
+  select(zone, date, confirmed, suspected, deaths, source) |>
+  filter(zone %in% ZONE_LEVELS)
+```
+
 ## Introduction
 
 The Democratic Republic of Congo is experiencing an outbreak of Maladie à Virus Ebola (MVE) with cases reported across health zones in Ituri and Nord-Kivu provinces. This report summarises the epidemiological situation based on data extracted from official INSP DRC situation reports. It is generated automatically and reflects the most recent available data.
 
 ## Methods
 
-Case count data were extracted from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC using an automated extraction pipeline. Suspect and probable cases are combined into a single unconfirmed category, as individual situation reports differ in which field they populate. Cumulative counts are enforced to be monotonically non-decreasing using the cumulative maximum across successive reporting dates.
+Case count data were extracted from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC using an automated extraction pipeline. Suspect and probable cases are combined into a single unconfirmed category, as individual situation reports differ in which field they populate. The reported death count combines deaths among suspect cases and deaths among probable cases, as situation reports are inconsistent in which column they use for the total — cumulative maxima are applied at both the zonal and aggregate level to enforce monotonicity across reporting dates. Cumulative counts are enforced to be monotonically non-decreasing using the cumulative maximum across successive reporting dates.
 
 ## Results
 
@@ -170,7 +227,7 @@ p1_dat <- totals |>
   select(date,
          `Suspect/probable cases` = unconfirmed,
          `Confirmed cases`        = confirmed,
-         `Suspected deaths`       = deaths) |>
+         `Outbreak deaths`        = deaths) |>
   pivot_longer(-date, names_to = "category", values_to = "count") |>
   mutate(category = factor(category, levels = names(PAL)))
 
@@ -250,9 +307,9 @@ zone_ts |>
   select(date, zone_label,
          `Suspect/probable cases` = unconfirmed,
          `Confirmed cases`        = confirmed,
-         `Suspected deaths`       = deaths) |>
+         `Outbreak deaths`        = deaths) |>
   pivot_longer(
-    cols      = c(`Suspect/probable cases`, `Confirmed cases`, `Suspected deaths`),
+    cols      = c(`Suspect/probable cases`, `Confirmed cases`, `Outbreak deaths`),
     names_to  = "category",
     values_to = "count"
   ) |>
@@ -351,8 +408,98 @@ bind_rows(zone_latest, total_row) |>
   autofit()
 ```
 
+### Cross-source validation
+
+Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which independently processes the same INSP SitRep PDFs into a standardised long-format. Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series (metric not reported on that date) are treated as missing.
+
+```{r}
+#| label: fig-comparison
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: this extraction; dashed lines: Kraemer lab. Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026."
+#| fig-width: 12
+#| fig-height: 9
+PAL_COMP <- c("This extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
+LTY_COMP <- c("This extraction" = "solid",   "Kraemer lab" = "dashed")
+
+our_for_comp <- zone_ts |>
+  transmute(zone, date, confirmed, suspected = unconfirmed, deaths, source = "This extraction")
+
+comp_long <- bind_rows(our_for_comp, kraemer) |>
+  pivot_longer(c(confirmed, suspected, deaths), names_to = "metric", values_to = "count") |>
+  mutate(
+    metric = recode(metric,
+      "confirmed" = "Confirmed cases",
+      "suspected" = "Suspect/probable cases",
+      "deaths"    = "Outbreak deaths"
+    ),
+    source = factor(source, levels = c("This extraction", "Kraemer lab"))
+  ) |>
+  filter(!is.na(count))
+
+ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
+  geom_line(linewidth = 0.9, na.rm = TRUE) +
+  geom_point(size = 2.0, na.rm = TRUE) +
+  facet_grid(metric ~ zone, scales = "free_y") +
+  scale_colour_manual(values = PAL_COMP) +
+  scale_linetype_manual(values = LTY_COMP) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title    = "MVE DRC \u2014 Cross-source validation",
+    subtitle = "Cumulative counts: this extraction vs Kraemer lab (kraemer-lab/Ebola_DRC_2026)",
+    x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
+    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
+  ) +
+  theme_sitrep(base_size = 9) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+```
+
+Table 2 presents numerical differences at the most recent date available in each source for each zone.
+
+```{r}
+#| label: tbl-comparison
+#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: this extraction vs Kraemer lab. Delta = ours minus Kraemer. Dashes indicate no data in that source."
+ours_latest <- zone_ts |>
+  group_by(zone) |>
+  slice_max(date, n = 1) |>
+  ungroup() |>
+  transmute(zone, conf_ours = confirmed, susp_ours = unconfirmed, dead_ours = deaths)
+
+kraemer_latest <- kraemer |>
+  group_by(zone) |>
+  slice_max(date, n = 1) |>
+  ungroup() |>
+  transmute(zone, conf_them = confirmed, susp_them = suspected, dead_them = deaths)
+
+full_join(ours_latest, kraemer_latest, by = "zone") |>
+  mutate(
+    d_conf = conf_ours - conf_them,
+    d_susp = susp_ours - susp_them,
+    d_dead = dead_ours - dead_them
+  ) |>
+  arrange(zone) |>
+  transmute(
+    zone,
+    conf_ours, conf_them, d_conf,
+    susp_ours, susp_them, d_susp,
+    dead_ours, dead_them, d_dead
+  ) |>
+  setNames(c(
+    "Health zone",
+    "Confirmed (ours)", "Confirmed (Kraemer)", "\u0394 confirmed",
+    "Suspect/prob. (ours)", "Suspect/prob. (Kraemer)", "\u0394 suspect/prob.",
+    "Deaths (ours)", "Deaths (Kraemer)", "\u0394 deaths"
+  )) |>
+  flextable() |>
+  bold(part = "header") |>
+  bg(part = "header", bg = "#1A3A5C") |>
+  color(part = "header", color = "white") |>
+  align(j = 2:10, align = "right", part = "all") |>
+  colformat_int(j = 2:10, na_str = "\u2014") |>
+  autofit()
+```
+
 ## Discussion
 
 The outbreak trajectory shows a consistent increase in suspect and probable case counts across the reporting period. Confirmed cases remain a minority of the total, reflecting the challenges of laboratory confirmation in the field setting. The geographic spread across both Ituri and Nord-Kivu provinces underscores the need for multi-province coordination of the response.
 
-Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator.
+Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. No official SitRep 003 has been identified in either the INSP website or the Kraemer lab repository, representing a gap in the series between SitRep 002 (15 May) and SitRep 004 (18 May). Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator, and the deaths column captures the first available of deaths-among-suspects and deaths-among-probables, which are not consistently labelled across situation reports. Where the two independently extracted series diverge in the cross-source comparison, differences reflect the date-attribution convention adopted by each pipeline: the Kraemer lab assigns the filing date of the situation report, whereas this pipeline uses the data reference date stated in the cumulative table title. Once dates are aligned by document rather than by calendar date, confirmed case counts agree closely between sources.
