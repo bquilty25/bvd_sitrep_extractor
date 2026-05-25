@@ -86,6 +86,23 @@ _POST_SLUG_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Regex to extract sitrep number from a source-page slug, e.g. sitrep-mve-n-010-2026 → 010
+_SITREP_NUM_RE = re.compile(r'sitrep-mve-n-0*(\d+)-\d{4}', re.IGNORECASE)
+
+
+def _sitrep_number_from_page(source_page: str) -> str | None:
+    """Return zero-padded sitrep number parsed from a source-page URL, or None."""
+    m = _SITREP_NUM_RE.search(source_page)
+    return f"{int(m.group(1)):03d}" if m else None
+
+
+def _canonical_filename(sitrep_num: str, date_str: str) -> str:
+    """Build a canonical PDF filename: MVE_SitRep_NNN_YYYY-MM-DD.pdf"""
+    date_part = date_str[:10] if date_str else ""
+    if date_part:
+        return f"MVE_SitRep_{sitrep_num}_{date_part}.pdf"
+    return f"MVE_SitRep_{sitrep_num}.pdf"
+
 
 def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
     """
@@ -168,13 +185,16 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
     Download the PDF at url to pdf_dir if not already in manifest (or file missing).
     Returns (is_new, local_path).
     """
-    filename = unquote(Path(urlparse(url).path).name)
-    dest = pdf_dir / filename
+    original_filename = unquote(Path(urlparse(url).path).name)
+    dest = pdf_dir / original_filename
 
     if url in manifest and dest.exists():
         return False, dest
+    # Also check if a canonical rename already covers this URL
+    if url in manifest and (pdf_dir / manifest[url].get("filename", "")).exists():
+        return False, pdf_dir / manifest[url]["filename"]
 
-    print(f"  ↓  {filename}")
+    print(f"  ↓  {original_filename}")
     if title:
         print(f"     {title}")
     _get = (session or requests).get
@@ -186,17 +206,37 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
         return False, dest
 
     ct = resp.headers.get("Content-Type", "")
-    if "pdf" not in ct.lower() and not filename.lower().endswith(".pdf"):
+    if "pdf" not in ct.lower() and not original_filename.lower().endswith(".pdf"):
         print(f"     Warning: unexpected Content-Type '{ct}' — skipping", file=sys.stderr)
         return False, dest
 
+    # Derive canonical name from the sitrep number + upload date when possible
+    uploaded_at = _parse_last_modified(resp.headers.get("Last-Modified", ""))
+    date_str = uploaded_at[:10] if uploaded_at else datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    num = _sitrep_number_from_page(source_page)
+    if num:
+        filename = _canonical_filename(num, date_str)
+        # Avoid overwriting a different PDF that already claimed this canonical name
+        candidate = pdf_dir / filename
+        counter = 2
+        while candidate.exists():
+            filename = _canonical_filename(num, date_str).replace(".pdf", f"_v{counter}.pdf")
+            candidate = pdf_dir / filename
+            counter += 1
+    else:
+        filename = original_filename
+
+    dest = pdf_dir / filename
     pdf_dir.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(resp.content)
     manifest[url] = {
         "filename": filename,
-        "title": title or _title_from_filename(filename),
+        "original_filename": original_filename,
+        "sitrep_number": num or "",
+        "canonical_name": filename,
+        "title": title or _title_from_filename(original_filename),
         "source_page": source_page,
-        "uploaded_at": _parse_last_modified(resp.headers.get("Last-Modified", "")),
+        "uploaded_at": uploaded_at,
         "downloaded_at": datetime.now(timezone.utc).isoformat(),
         "size_bytes": len(resp.content),
     }
@@ -252,6 +292,22 @@ def main() -> None:
     print(f"Found {len(urls)} relevant PDF link(s) on INSP website.\n")
 
     manifest  = load_manifest(manifest_path)
+
+    # Backfill canonical_name / sitrep_number for existing manifest entries
+    _manifest_changed = False
+    for _url, _entry in manifest.items():
+        if _entry.get("sitrep_number") is not None:
+            continue  # already enriched
+        _num = _sitrep_number_from_page(_entry.get("source_page", ""))
+        _date = (_entry.get("uploaded_at") or _entry.get("downloaded_at") or "")[:10]
+        _entry["sitrep_number"] = _num or ""
+        _entry["canonical_name"] = _canonical_filename(_num, _date) if _num else _entry.get("filename", "")
+        if "original_filename" not in _entry:
+            _entry["original_filename"] = _entry.get("filename", "")
+        _manifest_changed = True
+    if _manifest_changed:
+        save_manifest(manifest_path, manifest)
+
     session   = requests.Session()
     session.headers["User-Agent"] = "MSF-Epicentre-SitRep-Fetcher/1.0"
     new_count = 0
