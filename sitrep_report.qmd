@@ -3,7 +3,6 @@ title: "Maladie à Virus Ebola — Situation Report"
 subtitle: "Democratic Republic of Congo"
 date: today
 date-format: "DD MMMM YYYY"
-output-dir: "../outputs"
 format:
   html:
     toc: true
