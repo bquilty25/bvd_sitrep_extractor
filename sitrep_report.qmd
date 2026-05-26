@@ -1,6 +1,7 @@
 ---
-title: "Maladie à Virus Ebola — Situation Report"
+title: "Maladie à Virus Ebola — Situation Report Extraction"
 subtitle: "Democratic Republic of Congo"
+author: "Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)"
 date: today
 date-format: "DD MMMM YYYY"
 format:

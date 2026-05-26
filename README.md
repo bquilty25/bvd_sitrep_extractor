@@ -4,6 +4,8 @@
 
 Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](outputs/sitrep_report.html#cross-source-validation).
 
+Author: Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)
+
 ## Quick Start
 
 Prerequisites:
@@ -93,3 +95,7 @@ PDF archive:
 - `count_type` values in combined tables are `Nouveaux` and `Cumules`.
 - `ND` values from source PDFs are stored as blanks.
 - Subtotals/totals are preserved when present in source tables.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
