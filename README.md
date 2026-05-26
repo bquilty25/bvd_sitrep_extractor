@@ -165,7 +165,7 @@ Written to `outputs/`.
 A Quarto report (`scripts/sitrep_report.qmd`) reads `master_combined_counts.csv` and renders an HTML report with epidemic curves, zone-level breakdowns, and cross-source validation. Render it from the project root:
 
 ```bash
-quarto render scripts/sitrep_report.qmd --output-dir outputs
+quarto render scripts/sitrep_report.qmd --output-dir ../outputs
 ```
 
 Output: `outputs/sitrep_report.html` (self-contained). All figures are also saved as PNGs to `outputs/plots/`.
