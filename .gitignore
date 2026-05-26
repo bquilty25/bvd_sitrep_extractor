@@ -17,7 +17,6 @@ pdfs/
 
 # Raw per-sitrep extraction files (large, rebuilable — do not commit)
 outputs/sitreps/
-scripts/outputs/
 
 # OS
 .DS_Store
