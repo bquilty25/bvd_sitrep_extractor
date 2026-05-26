@@ -242,7 +242,8 @@ p4 <- zone_new_long |>
   theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
 
 # ── Save ───────────────────────────────────────────────────────────────────────
-out_dir <- here::here("outputs")
+out_dir <- here::here("outputs", "plots")
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 ggsave(file.path(out_dir, "plot_01_cumulative_curve.png"),
        p1, width = 8, height = 5, dpi = 300)
@@ -253,4 +254,4 @@ ggsave(file.path(out_dir, "plot_03_zone_timeseries_cumulative.png"),
 ggsave(file.path(out_dir, "plot_04_zone_timeseries_new_cases.png"),
        p4, width = 10, height = 11, dpi = 300)
 
-message("Plots saved to outputs/")
+message("Plots saved to outputs/plots/")

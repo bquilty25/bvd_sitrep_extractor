@@ -597,6 +597,23 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
 
 
 
+def _canonical_output_stem(pdf_path: Path, pdf_dir: Path) -> str:
+    """Return the canonical folder stem for a PDF (from pdfs/manifest.json if available)."""
+    manifest_path = pdf_dir / "manifest.json"
+    if manifest_path.exists():
+        try:
+            import json as _json
+            manifest = _json.loads(manifest_path.read_text(encoding="utf-8"))
+            for entry in manifest.values():
+                if entry.get("original_filename") == pdf_path.name or entry.get("filename") == pdf_path.name:
+                    canonical = entry.get("canonical_name", "")
+                    if canonical:
+                        return Path(canonical).stem
+        except Exception:
+            pass
+    return pdf_path.stem
+
+
 def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) -> None:
     """Process every PDF in pdf_dir not yet recorded in outputs/processed.json."""
     if not pdf_dir.exists():
@@ -618,7 +635,8 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     print(f"Update mode: {len(new_pdfs)} new PDF(s) in {pdf_dir.name}/\n")
     all_new = []
     for i, pdf_path in enumerate(new_pdfs, 1):
-        per_dir = output_dir / pdf_path.stem
+        stem = _canonical_output_stem(pdf_path, pdf_dir)
+        per_dir = output_dir / "sitreps" / stem
         combined_df, _, _, _ = _process_one(
             client, pdf_path, per_dir, label=f"{i}/{len(new_pdfs)}"
         )
@@ -639,7 +657,7 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     print(f"  New rows added : {len(new_rows_df)}")
     print(f"  Master total   : {len(master_df)} rows")
     print("\u2550" * 55)
-    print(f"\nOutputs written to: {output_dir}/")
+    print(f"\nOutputs written to: {output_dir}/sitreps/")
 
 
 def main() -> None:
