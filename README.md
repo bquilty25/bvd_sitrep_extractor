@@ -2,8 +2,7 @@
 
 > AI-assisted development: this pipeline and report were developed with GitHub Copilot and the Anthropic Claude API (`claude-sonnet-4-6`), with human review.
 
-Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including comparison with Kraemer Lab manual extraction
-- [Cross-source validation (HTML)](outputs/sitrep_report.html#cross-source-validation)
+Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](outputs/sitrep_report.html#cross-source-validation).
 
 ## Quick Start
 
