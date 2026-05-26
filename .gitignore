@@ -15,10 +15,13 @@ env/
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
 
-# Generated outputs (CSVs, PNGs, HTML reports — rebuilt by the pipeline)
-outputs/
+# Raw per-sitrep extraction files (large, rebuilable — do not commit)
+outputs/sitreps/
 scripts/outputs/
 
 # OS
 .DS_Store
 Thumbs.db
+
+/.quarto/
+**/*.quarto_ipynb

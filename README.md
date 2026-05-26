@@ -1,5 +1,7 @@
 # SitRep BVD DRC — Table Extraction Pipeline
 
+> **AI-assisted development** — This pipeline and the accompanying report were developed with the assistance of [GitHub Copilot](https://github.com/features/copilot) (Microsoft) and the [Claude API](https://docs.anthropic.com/) (Anthropic, `claude-sonnet-4-6`). The extraction pipeline, report generation, and analysis code were primarily written by AI tools under human review.
+
 Automatically extracts epidemiological data from INSP DRC Ebola situation report PDFs using Claude's visual PDF understanding.
 
 Two tables are extracted from each SitRep and written to three output files:
@@ -157,6 +159,16 @@ Written to `outputs/`.
 |---|---|
 | `master_combined_counts.csv` | All SitReps concatenated into one standardised counts table, sorted chronologically |
 | `processed.json` | Registry of processed PDF filenames and timestamps |
+
+### HTML situation report
+
+A Quarto report (`scripts/sitrep_report.qmd`) reads `master_combined_counts.csv` and renders an HTML report with epidemic curves, zone-level breakdowns, and cross-source validation. Render it from the project root:
+
+```bash
+quarto render scripts/sitrep_report.qmd --output-dir outputs
+```
+
+Output: `outputs/sitrep_report.html` (self-contained). All figures are also saved as PNGs to `outputs/plots/`.
 
 ### PDF archive
 

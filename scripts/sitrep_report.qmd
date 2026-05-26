@@ -220,6 +220,8 @@ The Democratic Republic of Congo is experiencing an outbreak of Maladie à Virus
 
 Case count data were extracted from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC using an automated extraction pipeline. Suspect and probable cases are combined into a single unconfirmed category, as individual situation reports differ in which field they populate. The reported death count combines deaths among suspect cases and deaths among probable cases, as situation reports are inconsistent in which column they use for the total — cumulative maxima are applied at both the zonal and aggregate level to enforce monotonicity across reporting dates. Cumulative counts are enforced to be monotonically non-decreasing using the cumulative maximum across successive reporting dates.
 
+This report and the underlying extraction pipeline were developed with the assistance of GitHub Copilot (Microsoft) and the Claude API (Anthropic, model: claude-sonnet-4-6).
+
 ## Results
 
 As of `r latest_date`, the DRC MVE outbreak had recorded a cumulative total of `r prettyNum(n_total, big.mark = ",")` cases (`r prettyNum(n_conf, big.mark = ",")` confirmed, `r prettyNum(n_unconf, big.mark = ",")` suspect or probable) and `r prettyNum(n_deaths, big.mark = ",")` deaths, corresponding to a case fatality ratio of `r cfr_pct`%. Cases have been reported across `r n_zones` health zones in `r n_provinces` provinces.
