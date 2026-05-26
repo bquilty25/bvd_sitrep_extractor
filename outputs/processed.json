@@ -34,5 +34,17 @@
   "SitRep_MVE_RDC_NA°010_25_05_26fv_IM.pdf": {
     "processed_at": "2026-05-25T20:00:56.334248+00:00",
     "rows_added": 33
+  },
+  "SitRep_MVE_001-2026.pdf": {
+    "processed_at": "2026-05-26T10:20:04.001847+00:00",
+    "rows_added": 1
+  },
+  "SitRep_MVE_002-2026.pdf": {
+    "processed_at": "2026-05-26T10:21:42.824862+00:00",
+    "rows_added": 0
+  },
+  "SitRep_MVE_004-2026.pdf": {
+    "processed_at": "2026-05-26T10:23:55.973436+00:00",
+    "rows_added": 12
   }
 }

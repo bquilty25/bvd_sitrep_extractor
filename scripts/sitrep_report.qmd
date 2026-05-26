@@ -210,6 +210,21 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases.csv") |>
   ) |>
   select(zone, date, confirmed, suspected, deaths, source) |>
   filter(zone %in% ZONE_LEVELS)
+
+kraemer_hosp <- read_kraemer_long("insp_sitrep__hospitalised.csv") |>
+  mutate(
+    zone         = recode(nom, !!!KRAEMER_NAME_MAP),
+    date         = as.Date(date),
+    hospitalised = suppressWarnings(as.numeric(hospitalised))
+  )
+
+kraemer_contacts <- read_kraemer_long("insp_sitrep__cumulative_contacts_traced.csv") |>
+  mutate(
+    zone            = recode(nom, !!!KRAEMER_NAME_MAP),
+    date            = as.Date(date),
+    contacts_traced = suppressWarnings(as.numeric(cumulative_contacts_traced))
+  ) |>
+  filter(!is.na(contacts_traced))
 ```
 
 ## Introduction
@@ -522,11 +537,159 @@ full_join(ours_latest, kraemer_latest, by = "zone") |>
   autofit()
 ```
 
+### Early sitrep source comparison
+
+For SitReps N°001, N°002, and N°004, the INSP DRC website hosted Ituri DPS provincial documents rather than the national INSP reports. The national documents were obtained from the Kraemer lab repository and extracted separately. Table 3 presents cumulative suspect/probable cases, confirmed cases, and deaths by health zone from each pair of documents. Provincial figures use the *probabilités* (probable cases) column; national figures use *cas suspects* (combined suspect and probable). Zones absent from the provincial documents appear with missing values.
+
+```{r}
+#| label: tbl-early-comp
+#| tbl-cap: "Table 3. Ituri DPS provincial documents vs national INSP documents for SitReps N°001, N°002 and N°004: cumulative suspect/probable cases, confirmed cases, and deaths by health zone. Delta = national minus provincial."
+PROV_SOURCES <- c(
+  "Draft-MVE-Ituri-ActuelB-1",
+  "Sitrep_MVE-Ituri_N\u00b0-002_18-mai-2026",
+  "Sitrep_MVE-Ituri_N\u00b0004-au-20-mai-2026"
+)
+
+NAT_SOURCES <- c(
+  "MVE_SitRep_001_national_2026-05-14",
+  "MVE_SitRep_002_national_2026-05-15",
+  "MVE_SitRep_004_national_2026-05-18"
+)
+
+SLOT_MAP <- c(
+  "Draft-MVE-Ituri-ActuelB-1"                  = "N\u00b0001",
+  "Sitrep_MVE-Ituri_N\u00b0-002_18-mai-2026"   = "N\u00b0002",
+  "Sitrep_MVE-Ituri_N\u00b0004-au-20-mai-2026" = "N\u00b0004",
+  "MVE_SitRep_001_national_2026-05-14"          = "N\u00b0001",
+  "MVE_SitRep_002_national_2026-05-15"          = "N\u00b0002",
+  "MVE_SitRep_004_national_2026-05-18"          = "N\u00b0004"
+)
+
+early_prov <- df |>
+  filter(count_type == "Cumules", !is_agg, sitrep_source %in% PROV_SOURCES) |>
+  mutate(slot = recode(sitrep_source, !!!SLOT_MAP)) |>
+  group_by(slot, zone) |>
+  slice_max(date, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  transmute(
+    slot, zone,
+    prov_date      = date,
+    prov_suspect   = unconfirmed,
+    prov_confirmed = confirmed,
+    prov_deaths    = deaths
+  )
+
+early_nat <- df |>
+  filter(count_type == "Cumules", !is_agg, sitrep_source %in% NAT_SOURCES) |>
+  mutate(slot = recode(sitrep_source, !!!SLOT_MAP)) |>
+  group_by(slot, zone) |>
+  slice_max(date, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  transmute(
+    slot, zone,
+    nat_date      = date,
+    nat_suspect   = unconfirmed,
+    nat_confirmed = confirmed,
+    nat_deaths    = deaths
+  )
+
+full_join(early_nat, early_prov, by = c("slot", "zone")) |>
+  mutate(d_suspect = nat_suspect - prov_suspect) |>
+  arrange(slot, zone) |>
+  transmute(
+    `SitRep`         = slot,
+    `Health zone`    = as.character(zone),
+    `Prov. date`     = format(prov_date, "%d %b"),
+    `Prov. suspect`  = prov_suspect,
+    `Prov. confirm.` = prov_confirmed,
+    `Prov. deaths`   = prov_deaths,
+    `Natl. date`     = format(nat_date, "%d %b"),
+    `Natl. suspect`  = nat_suspect,
+    `Natl. confirm.` = nat_confirmed,
+    `Natl. deaths`   = nat_deaths,
+    `Delta suspect`  = d_suspect
+  ) |>
+  flextable() |>
+  bold(part = "header") |>
+  bg(part = "header", bg = "#1A3A5C") |>
+  color(part = "header", color = "white") |>
+  merge_v(j = "SitRep") |>
+  valign(j = "SitRep", valign = "top", part = "body") |>
+  align(j = 3:11, align = "right", part = "all") |>
+  colformat_int(j = 4:11, na_str = "\u2014") |>
+  autofit()
+```
+
+### Response indicators
+
+```{r}
+#| label: fig-hospitalised
+#| fig-cap: "Patients currently hospitalised by health zone, 20–23 May 2026. Source: Kraemer lab / INSP DRC situation reports."
+#| fig-width: 8
+#| fig-height: 5
+ZONE_COLOURS <- c(
+  "Mongbwalu" = "#56B4E9",
+  "Rwampara"  = "#E69F00",
+  "Bunia"     = "#009E73",
+  "Nyankunde" = "#D55E00",
+  "Aru"       = "#CC79A7"
+)
+
+kraemer_hosp |>
+  filter(!is.na(hospitalised)) |>
+  mutate(zone = factor(zone, levels = names(ZONE_COLOURS))) |>
+  ggplot(aes(x = date, y = hospitalised, colour = zone, group = zone)) +
+  geom_line(linewidth = 1.1, na.rm = TRUE) +
+  geom_point(size = 2.8, na.rm = TRUE) +
+  scale_colour_manual(values = ZONE_COLOURS, na.translate = FALSE) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "1 day") +
+  scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.12))) +
+  labs(
+    title    = "MVE DRC \u2014 Hospitalised patients",
+    subtitle = "Patients currently in hospital per reporting day, by health zone",
+    x = NULL, y = "Patients hospitalised", colour = NULL,
+    caption  = "Source: Kraemer lab / INSP DRC situation reports"
+  ) +
+  theme_sitrep(base_size = 12)
+```
+
+```{r}
+#| label: fig-contacts
+#| fig-cap: "Cumulative contacts traced by health zone, 14–23 May 2026. ND values (not reported) are excluded. Source: Kraemer lab / INSP DRC situation reports."
+#| fig-width: 8
+#| fig-height: 5
+CONTACTS_PAL <- c(
+  "Mongbwalu" = "#56B4E9", "Rwampara"  = "#E69F00",
+  "Bunia"     = "#009E73", "Nyankunde" = "#D55E00",
+  "Bambu"     = "#88CCEE", "Aru"       = "#CC79A7",
+  "Komanda"   = "#0072B2", "Mangala"   = "#999999",
+  "Nizi"      = "#117733", "Kilo"      = "#882255"
+)
+
+kraemer_contacts |>
+  mutate(zone = factor(zone, levels = names(CONTACTS_PAL))) |>
+  ggplot(aes(x = date, y = contacts_traced, colour = zone, group = zone)) +
+  geom_line(linewidth = 1.1, na.rm = TRUE) +
+  geom_point(size = 2.8, na.rm = TRUE) +
+  scale_colour_manual(values = CONTACTS_PAL, na.translate = FALSE) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.12))) +
+  labs(
+    title    = "MVE DRC \u2014 Cumulative contacts traced",
+    subtitle = "Cumulative contacts traced per reporting day, by health zone",
+    x = NULL, y = "Contacts traced (cumulative)", colour = NULL,
+    caption  = "Source: Kraemer lab / INSP DRC situation reports"
+  ) +
+  theme_sitrep(base_size = 12)
+```
+
 ## Discussion
 
 The outbreak trajectory shows a consistent increase in suspect and probable case counts across the reporting period. Confirmed cases remain a minority of the total, reflecting the challenges of laboratory confirmation in the field setting. The geographic spread across both Ituri and Nord-Kivu provinces underscores the need for multi-province coordination of the response.
 
-Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. Inspection of the Kraemer lab repository confirms that a national INSP SitRep N°004 exists and covers 18 May 2026 data; this document was not retrieved by this pipeline's web scraper, which instead obtained an Ituri DPS provincial document at the corresponding INSP website URL slot. Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator, and the deaths column captures the first available of deaths-among-suspects and deaths-among-probables, which are not consistently labelled across situation reports.
+Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. National INSP SitReps N°001, N°002, and N°004 were not available on the INSP website and were obtained from the Kraemer lab repository; Table 3 documents the systematic differences between these national documents and the Ituri DPS provincial documents that occupied the same URL slots. Response indicator data (hospitalisation, contacts traced) are sourced from the Kraemer lab repository as these metrics are not captured in the automated extraction pipeline. Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator, and the deaths column captures the first available of deaths-among-suspects and deaths-among-probables, which are not consistently labelled across situation reports.
 
 Inspection of the raw PDF extractions and the Kraemer lab source documents identified four distinct reasons for divergence in the cross-source comparison. The most substantive concerns the source documents used for the first three sitrep slots (N°001–003). The INSP DRC website hosted Ituri DPS provincial sitreps at these URL positions rather than the national INSP documents. These provincial documents cover only the three main Ituri health zones and use the column heading *probabilités* (probable cases) at zone level, whereas the national INSP format uses *cas suspects* — a combined suspect and probable tally. As a result, zone-level unconfirmed case counts disagree substantially for dates prior to 19 May 2026: for example, Mongbwalu on 15 May is recorded as 57 probable cases in the Ituri DPS SitRep N°002, compared with 246 suspected cases in the Kraemer lab national SitRep N°002 — a figure coinciding with the aggregate suspect total across all Ituri zones in the provincial document. From SitRep N°005 (19 May 2026) onwards, both pipelines use the same nationally issued INSP documents, and confirmed case counts, suspected case counts, and deaths are near-identical between sources for this period.
 
