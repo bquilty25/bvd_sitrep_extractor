@@ -529,6 +529,10 @@ bind_rows(zone_latest, total_row) |>
 
 Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which codes INSP DRC situation reports into a standardised long-format by manual human extraction. Both pipelines operate on the same source PDFs (MD5-verified). Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series are treated as missing. Any divergence between the two series therefore reflects differences in extraction method — automated LLM-based visual extraction versus human manual coding — rather than differences in the source documents.
 
+### Data quality notes — case counts
+
+One discrepancy requires attention. Both this pipeline (before cummax) and the Kraemer lab series record a decrease in cumulative confirmed cases for Mongbwalu between 21 May (14 cases) and 22 May (10 cases). As cumulative counts cannot decrease, this reflects an error in the 22 May situation report itself — either a reclassification of previously confirmed cases or a data entry error — rather than an artefact of the extraction method. The monotonic cummax constraint applied to the automated extraction series suppresses this dip (retaining 14 on 22 May), but the Kraemer lab series, which does not apply cummax, shows the raw decrease. Users should treat the confirmed case count for Mongbwalu around 22 May with caution.
+
 ```{r}
 #| label: fig-comparison
 #| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (cummax applied); dotted lines: automated extraction (raw, no cummax); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
