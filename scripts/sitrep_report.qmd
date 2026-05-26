@@ -443,20 +443,44 @@ bind_rows(zone_latest, total_row) |>
 
 ### Cross-source validation
 
-Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which codes INSP DRC situation reports into a standardised long-format by manual human extraction. Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series (metric not reported on that date) are treated as missing. For SitReps N°001–003 the two pipelines draw on different source documents; see the Discussion for details.
+Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which codes INSP DRC situation reports into a standardised long-format by manual human extraction. National INSP SitReps N°001, N°002, and N°004, extracted separately from PDFs obtained via the Kraemer lab repository, are shown as a third series. Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series are treated as missing.
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction; dashed lines: Kraemer lab. Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (provincial docs for early sitreps); dotted lines: national INSP SitReps N°001/002/004 (this pipeline); dashed lines: Kraemer lab."
 #| fig-width: 12
 #| fig-height: 11
-PAL_COMP <- c("Automated extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
-LTY_COMP <- c("Automated extraction" = "solid",   "Kraemer lab" = "dashed")
+PAL_COMP <- c(
+  "Automated extraction" = "#0072B2",
+  "National INSP (early)" = "#009E73",
+  "Kraemer lab"           = "#E69F00"
+)
+LTY_COMP <- c(
+  "Automated extraction"  = "solid",
+  "National INSP (early)" = "dotted",
+  "Kraemer lab"           = "dashed"
+)
 
 our_for_comp <- zone_ts |>
-  transmute(zone, date, confirmed, suspected = unconfirmed, deaths, source = "Automated extraction")
+  transmute(zone, date, confirmed, suspected = unconfirmed, deaths,
+            source = "Automated extraction")
 
-comp_long <- bind_rows(our_for_comp, kraemer) |>
+national_for_comp <- df |>
+  filter(
+    count_type == "Cumules", !is_agg, zone %in% ZONE_LEVELS,
+    sitrep_source %in% c(
+      "MVE_SitRep_001_national_2026-05-14",
+      "MVE_SitRep_002_national_2026-05-15",
+      "MVE_SitRep_004_national_2026-05-18"
+    )
+  ) |>
+  group_by(date, zone) |>
+  slice_max(order_by = unconfirmed, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  transmute(zone, date, confirmed, suspected = unconfirmed, deaths,
+            source = "National INSP (early)")
+
+comp_long <- bind_rows(our_for_comp, national_for_comp, kraemer) |>
   pivot_longer(c(confirmed, suspected, deaths), names_to = "metric", values_to = "count") |>
   mutate(
     metric = recode(metric,
@@ -464,7 +488,7 @@ comp_long <- bind_rows(our_for_comp, kraemer) |>
       "suspected" = "Suspect/probable cases",
       "deaths"    = "Outbreak deaths"
     ),
-    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+    source = factor(source, levels = c("Automated extraction", "National INSP (early)", "Kraemer lab"))
   ) |>
   filter(!is.na(count))
 
@@ -478,7 +502,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction vs Kraemer lab (kraemer-lab/Ebola_DRC_2026)",
+    subtitle = "Cumulative counts: automated extraction vs national INSP (early) vs Kraemer lab",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
