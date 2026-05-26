@@ -130,8 +130,8 @@ revisions <- zone_ts |>
   )
 if (nrow(revisions) > 0) {
   message("NOTE: cummax suppressed ", nrow(revisions),
-          " downward revision(s) in cumulative counts:")
-  print(revisions)
+          " downward revision(s) in cumulative counts:\n",
+          paste(capture.output(print(revisions)), collapse = "\n"))
 }
 
 zone_new <- df |>
@@ -245,7 +245,7 @@ p1_last <- p1_dat |>
   slice_max(date, n = 1) |>
   ungroup()
 
-ggplot(p1_dat, aes(x = date, y = count, colour = category, group = category)) +
+p <- ggplot(p1_dat, aes(x = date, y = count, colour = category, group = category)) +
   geom_line(linewidth = 1.1, na.rm = TRUE) +
   geom_point(size = 2.8, na.rm = TRUE) +
   geom_label_repel(
@@ -274,6 +274,8 @@ ggplot(p1_dat, aes(x = date, y = count, colour = category, group = category)) +
     caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 12)
+ggsave(here("outputs", "plots", "fig-cumulative.png"), plot = p, width = 8, height = 5, dpi = 300)
+p
 ```
 
 ### Daily new cases
@@ -283,7 +285,7 @@ ggplot(p1_dat, aes(x = date, y = count, colour = category, group = category)) +
 #| fig-cap: "New cases reported per situation report across all health zones, DRC. Source: INSP DRC."
 #| fig-width: 7
 #| fig-height: 4
-daily_new |>
+p <- daily_new |>
   select(date,
          `Suspect/probable cases` = unconfirmed,
          `Confirmed cases`        = confirmed) |>
@@ -301,6 +303,8 @@ daily_new |>
     caption  = "Source: INSP DRC situation reports"
   ) +
   theme_sitrep(base_size = 12)
+ggsave(here("outputs", "plots", "fig-new-cases.png"), plot = p, width = 7, height = 4, dpi = 300)
+p
 ```
 
 ### Geographic distribution — cumulative counts
@@ -310,7 +314,7 @@ daily_new |>
 #| fig-cap: "Cumulative cases by health zone. Y-axis is free across panels. Source: INSP DRC."
 #| fig-width: 10
 #| fig-height: 11
-zone_ts |>
+p <- zone_ts |>
   make_zone_labels() |>
   select(date, zone_label,
          `Suspect/probable cases` = unconfirmed,
@@ -337,6 +341,8 @@ zone_ts |>
   ) +
   theme_sitrep(base_size = 10) +
   theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
+ggsave(here("outputs", "plots", "fig-zone-cumulative.png"), plot = p, width = 10, height = 11, dpi = 300)
+p
 ```
 
 ### Geographic distribution — new cases
@@ -346,7 +352,7 @@ zone_ts |>
 #| fig-cap: "New cases per situation report by health zone. Y-axis is free across panels. Source: INSP DRC."
 #| fig-width: 10
 #| fig-height: 11
-zone_new |>
+p <- zone_new |>
   make_zone_labels() |>
   select(date, zone_label,
          `Suspect/probable cases` = unconfirmed,
@@ -371,6 +377,8 @@ zone_new |>
   ) +
   theme_sitrep(base_size = 10) +
   theme(axis.text.x = element_text(size = 8, angle = 45, hjust = 1))
+ggsave(here("outputs", "plots", "fig-zone-new.png"), plot = p, width = 10, height = 11, dpi = 300)
+p
 ```
 
 ### Current counts by health zone
@@ -422,14 +430,14 @@ Cumulative zone-level counts from this pipeline are compared against the [Kraeme
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: this extraction; dashed lines: Kraemer lab. Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction; dashed lines: Kraemer lab. Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026."
 #| fig-width: 12
 #| fig-height: 11
-PAL_COMP <- c("This extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
-LTY_COMP <- c("This extraction" = "solid",   "Kraemer lab" = "dashed")
+PAL_COMP <- c("Automated extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
+LTY_COMP <- c("Automated extraction" = "solid",   "Kraemer lab" = "dashed")
 
 our_for_comp <- zone_ts |>
-  transmute(zone, date, confirmed, suspected = unconfirmed, deaths, source = "This extraction")
+  transmute(zone, date, confirmed, suspected = unconfirmed, deaths, source = "Automated extraction")
 
 comp_long <- bind_rows(our_for_comp, kraemer) |>
   pivot_longer(c(confirmed, suspected, deaths), names_to = "metric", values_to = "count") |>
@@ -439,11 +447,11 @@ comp_long <- bind_rows(our_for_comp, kraemer) |>
       "suspected" = "Suspect/probable cases",
       "deaths"    = "Outbreak deaths"
     ),
-    source = factor(source, levels = c("This extraction", "Kraemer lab"))
+    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
   ) |>
   filter(!is.na(count))
 
-ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
+p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(size = 2.0, na.rm = TRUE) +
   facet_grid(metric ~ zone, scales = "free_y") +
@@ -453,7 +461,7 @@ ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) 
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: this extraction vs Kraemer lab (kraemer-lab/Ebola_DRC_2026)",
+    subtitle = "Cumulative counts: automated extraction vs Kraemer lab (kraemer-lab/Ebola_DRC_2026)",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
@@ -463,13 +471,15 @@ ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) 
     panel.border    = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
     panel.spacing   = unit(0.6, "lines")
   )
+ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 11, dpi = 300)
+p
 ```
 
 Table 2 presents numerical differences at the most recent date available in each source for each zone.
 
 ```{r}
 #| label: tbl-comparison
-#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: this extraction vs Kraemer lab. Delta = ours minus Kraemer. Dashes indicate no data in that source."
+#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: automated extraction vs Kraemer lab. Delta = ours minus Kraemer. Dashes indicate no data in that source."
 ours_latest <- zone_ts |>
   group_by(zone) |>
   slice_max(date, n = 1) |>
