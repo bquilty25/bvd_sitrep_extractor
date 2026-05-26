@@ -43,7 +43,20 @@ COMBINED_COLS = [
     "count_start_date", "count_end_date", "count_type",
     "cases_suspect", "cases_probable", "cases_confirmed",
     "deaths_suspected", "deaths_probable", "deaths_confirmed",
+    "contacts",
     "zone", "province", "sitrep_source", "is_aggregate",
+]
+
+RESPONSE_COLS = [
+    "date", "zone", "province", "sitrep_source",
+    "in_bed_previous_day", "new_admissions_ppl", "new_admissions_other",
+    "total_admissions", "total_isolated", "cumulative_admitted",
+]
+
+POE_COLS = [
+    "date", "sitrep_source",
+    "total_passed", "total_screened", "total_handwashing",
+    "total_sensitised", "contacts_listed", "alerts_raised",
 ]
 
 # Keywords that identify an alerts/investigation table that must NOT be treated
@@ -109,7 +122,7 @@ situation report (Rapport de Situation / SitRep) about MVE (Maladie à Virus \
 Ebola or Marburg) in the DRC (République Démocratique du Congo).
 
 Output ONLY a valid JSON object — no markdown fences, no commentary — \
-containing EXACTLY two keys. Read directly from the PDF visuals.
+containing EXACTLY four keys. Read directly from the PDF visuals.
 
 TABLE 1 — key "new_cases":
   The table showing the most recent daily case counts (nouvelles données, nouveaux \
@@ -130,8 +143,8 @@ similar). Apply the same transposition rule if zones are columns.
   headers clearly refer to CASE COUNTS (cas suspects, cas confirmés, décès).
   If no such table exists, return "rows": [].
 
-For BOTH tables, normalise every row to these EXACT keys — use empty string "" for \
-any field not present in the source, and preserve zeros as "0":
+For BOTH TABLE 1 and TABLE 2, normalise every row to these EXACT keys — use empty \
+string "" for any field not present in the source, and preserve zeros as "0":
   "province"        province or region name (empty if not listed per row)
   "zone_de_sante"   health zone / zone de santé name (empty for summary/total rows)
   "cas_suspects"    count of suspected cases
@@ -140,8 +153,10 @@ any field not present in the source, and preserve zeros as "0":
   "deces_suspects"  count of suspected deaths
   "deces_probables" count of probable deaths
   "deces_confirmes" count of confirmed deaths
+  "contacts"        cumulative contacts listed/traced for this zone ("Nbre de contacts",
+                    "contacts listés", "contacts tracés" — empty string if not in table)
 
-Also provide for EACH table:
+Also provide for EACH of TABLE 1 and TABLE 2:
   "table_title"      : exact title string from the document (empty string if none found)
   "reporting_date"   : the 'Date de rapportage' / 'Date du rapport' / 'Date de rédaction'
                        from the document header info-box, in DD/MM/YYYY format.
@@ -160,7 +175,7 @@ Also provide for EACH table:
                        (e.g. from 'du 1er Avril 2026'). Empty string if not stated.
   "notes"            : any footnote or asterisk text below the table (empty string if none)
 
-TEXT FALLBACK FOR ROW FIELDS:
+TEXT FALLBACK FOR ROW FIELDS (TABLE 1 and TABLE 2 only):
   If a numeric field is absent from the table itself but its value is explicitly and
   unambiguously stated in the body text, Points Saillants, or footnotes for the same
   reporting unit (zone / province / total) AND for the same reporting period (new cases
@@ -168,6 +183,38 @@ TEXT FALLBACK FOR ROW FIELDS:
   Do NOT pull cumulative totals into TABLE 1 rows, or daily new-case counts into TABLE 2
   rows. Do NOT infer, estimate, or calculate — only use figures explicitly stated in the
   document for that table's period.
+
+TABLE 3 — key "response_indicators":
+  Find the patient/case movement table (often titled "Mouvement des malades dans les
+  établissements de soins" or "Tableau VI" or similar). This table has health facility
+  columns with zone-level sub-totals (e.g. "SOUS TOTAL BUNIA", "SOUS TOTAL RWAMPARA")
+  and single-facility zone columns (e.g. "HGR MONGBWALU", "HGR NYANKUNDE", "HGR BAMBU",
+  "HGR ARU"). Extract one output row per zone using the zone sub-total column (or the
+  single zone hospital column if there is no sub-total for that zone). Map zone names
+  from the facility column header (e.g. "HGR MONGBWALU" → "Mongbwalu",
+  "SOUS TOTAL BUNIA" → "Bunia", "SOUS TOTAL RWAMPARA" → "Rwampara").
+  Row fields — use empty string if the indicator row is absent:
+    "zone_de_sante"         : zone name (as above)
+    "in_bed_previous_day"   : "Report" / "Nbre de malades au lit à la fin de journée précédente"
+    "new_admissions_ppl"    : "Nouvelles Admissions du jour PPL" (detained/prisoners)
+    "new_admissions_other"  : "Nouvelles Admissions du jour Autres"
+    "total_admissions"      : "Total admissions du jour"
+    "total_isolated"        : "Effectif total en isolement"
+    "cumulative_admitted"   : "Cumul de malades admis en isolement"
+  If this table does not exist, return "rows": [].
+  Also provide "table_title", "period_end_date" (from the table title or document header).
+
+TABLE 4 — key "poe":
+  Find the Points d'Entrée / Points de Contrôle (PoE/PoC) summary table (often titled
+  "Synthèse de données au PoE/PoC" or "Tableau III"). Return exactly ONE row with:
+    "total_passed"      : "Voyageurs passés par le PoE/PoC"
+    "total_screened"    : "Voyageurs screenés"
+    "total_handwashing" : "Voyageurs ayant lavé les mains"
+    "total_sensitised"  : "Voyageurs sensibilisés"
+    "contacts_listed"   : "Contacts listés"
+    "alerts_raised"     : "Alertes remontées"
+  If this table does not exist, return "rows": [].
+  Also provide "table_title", "period_end_date".
 
 Schema:
 {
@@ -177,11 +224,12 @@ Schema:
     "period_end_date": "DD/MM/YYYY or empty",
     "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
-                "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
+                "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes",
+                "contacts"],
     "rows": [
       {"province": "...", "zone_de_sante": "...", "cas_suspects": "...",
         "cas_probables": "...", "cas_confirmes": "...", "deces_suspects": "...",
-        "deces_probables": "...", "deces_confirmes": "..."},
+        "deces_probables": "...", "deces_confirmes": "...", "contacts": "..."},
       ...
     ],
     "notes": "..."
@@ -192,9 +240,28 @@ Schema:
     "period_end_date": "DD/MM/YYYY or empty",
     "period_start_date": "DD/MM/YYYY or empty",
     "columns": ["province", "zone_de_sante", "cas_suspects", "cas_probables",
-                "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes"],
+                "cas_confirmes", "deces_suspects", "deces_probables", "deces_confirmes",
+                "contacts"],
     "rows": [...],
     "notes": "..."
+  },
+  "response_indicators": {
+    "table_title": "...",
+    "period_end_date": "DD/MM/YYYY or empty",
+    "rows": [
+      {"zone_de_sante": "...", "in_bed_previous_day": "...", "new_admissions_ppl": "...",
+       "new_admissions_other": "...", "total_admissions": "...",
+       "total_isolated": "...", "cumulative_admitted": "..."},
+      ...
+    ]
+  },
+  "poe": {
+    "table_title": "...",
+    "period_end_date": "DD/MM/YYYY or empty",
+    "rows": [
+      {"total_passed": "...", "total_screened": "...", "total_handwashing": "...",
+       "total_sensitised": "...", "contacts_listed": "...", "alerts_raised": "..."}
+    ]
   }
 }
 """
@@ -295,6 +362,7 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
             "deaths_suspected": _nd(r.get("deces_suspects", "")),
             "deaths_probable":  _nd(r.get("deces_probables", "")),
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
+            "contacts":         _nd(r.get("contacts", "")),
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
             "sitrep_source":    source,
@@ -315,6 +383,7 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
             "deaths_suspected": _nd(r.get("deces_suspects", "")),
             "deaths_probable":  _nd(r.get("deces_probables", "")),
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
+            "contacts":         _nd(r.get("contacts", "")),
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
             "province":         r.get("province", ""),
             "sitrep_source":    source,
@@ -322,6 +391,117 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
         })
 
     return pd.DataFrame(rows, columns=COMBINED_COLS)
+
+
+_RESPONSE_FIELDS = (
+    "in_bed_previous_day", "new_admissions_ppl", "new_admissions_other",
+    "total_admissions", "total_isolated", "cumulative_admitted",
+)
+
+# Map common facility/sub-total column labels → canonical zone name
+_FACILITY_ZONE_MAP: dict[str, str] = {
+    "sous total bunia": "Bunia",
+    "sous-total bunia": "Bunia",
+    "sous total rwampara": "Rwampara",
+    "sous-total rwampara": "Rwampara",
+    "hgr mongbwalu": "Mongbwalu",
+    "hgr nyankunde": "Nyankunde",
+    "hgr bambu": "Bambu",
+    "hgr aru": "Aru",
+    "hgr butembo": "Butembo",
+    "hgr katwa": "Katwa",
+    "hgr goma": "Goma",
+}
+
+
+def _normalise_response_zone(raw_zone: str) -> str:
+    """Convert a facility / sub-total column label to a canonical zone name."""
+    key = raw_zone.strip().lower()
+    if key in _FACILITY_ZONE_MAP:
+        return _FACILITY_ZONE_MAP[key]
+    # Fall back to generic zone normalisation
+    return normalise_zone(raw_zone)
+
+
+def build_response_counts(raw_data: dict, sitrep_date: str, source: str = "") -> pd.DataFrame:
+    """Build a zone-level response-indicators DataFrame from the response_indicators table."""
+    ri = raw_data.get("response_indicators", {})
+    date_str = (
+        ri.get("period_end_date", "")
+        or parse_french_date(ri.get("table_title", ""))
+        or sitrep_date
+    )
+    rows = []
+    for r in ri.get("rows", []):
+        zone_raw = r.get("zone_de_sante", "").strip()
+        if not zone_raw:
+            continue
+        # Require at least one non-empty indicator
+        if not any(_nd(r.get(f, "")) != "" for f in _RESPONSE_FIELDS):
+            continue
+        rows.append({
+            "date":                 date_str,
+            "zone":                 _normalise_response_zone(zone_raw),
+            "province":             r.get("province", ""),
+            "sitrep_source":        source,
+            "in_bed_previous_day":  _nd(r.get("in_bed_previous_day", "")),
+            "new_admissions_ppl":   _nd(r.get("new_admissions_ppl", "")),
+            "new_admissions_other": _nd(r.get("new_admissions_other", "")),
+            "total_admissions":     _nd(r.get("total_admissions", "")),
+            "total_isolated":       _nd(r.get("total_isolated", "")),
+            "cumulative_admitted":  _nd(r.get("cumulative_admitted", "")),
+        })
+    df = pd.DataFrame(rows, columns=RESPONSE_COLS)
+    if df.empty:
+        return df
+    # Some zones (e.g. Rwampara) appear as multiple sub-rows for different
+    # isolation units. Sum numeric fields across sub-rows to get the zone total.
+    numeric_cols = [
+        "in_bed_previous_day", "new_admissions_ppl", "new_admissions_other",
+        "total_admissions", "total_isolated", "cumulative_admitted",
+    ]
+    group_cols = ["date", "zone", "province", "sitrep_source"]
+    df[numeric_cols] = df[numeric_cols].apply(pd.to_numeric, errors="coerce")
+    df = (
+        df.groupby(group_cols, sort=False)[numeric_cols]
+        .sum(min_count=1)   # NaN if ALL sub-rows are NaN for that column
+        .reset_index()
+    )
+    # Restore column order and stringify numerics back to "" for NaN
+    for col in numeric_cols:
+        df[col] = df[col].apply(lambda v: "" if pd.isna(v) else str(int(v)) if v == int(v) else str(v))
+    return df[RESPONSE_COLS]
+
+
+_POE_FIELDS = (
+    "total_passed", "total_screened", "total_handwashing",
+    "total_sensitised", "contacts_listed", "alerts_raised",
+)
+
+
+def build_poe_counts(raw_data: dict, sitrep_date: str, source: str = "") -> pd.DataFrame:
+    """Build a POE aggregate DataFrame from the poe table."""
+    poe = raw_data.get("poe", {})
+    date_str = (
+        poe.get("period_end_date", "")
+        or parse_french_date(poe.get("table_title", ""))
+        or sitrep_date
+    )
+    rows = []
+    for r in poe.get("rows", []):
+        if not any(_nd(r.get(f, "")) != "" for f in _POE_FIELDS):
+            continue
+        rows.append({
+            "date":               date_str,
+            "sitrep_source":      source,
+            "total_passed":       _nd(r.get("total_passed", "")),
+            "total_screened":     _nd(r.get("total_screened", "")),
+            "total_handwashing":  _nd(r.get("total_handwashing", "")),
+            "total_sensitised":   _nd(r.get("total_sensitised", "")),
+            "contacts_listed":    _nd(r.get("contacts_listed", "")),
+            "alerts_raised":      _nd(r.get("alerts_raised", "")),
+        })
+    return pd.DataFrame(rows, columns=POE_COLS)
 
 
 def load_pdf_b64(path: Path) -> str:
@@ -459,6 +639,8 @@ def save_outputs(
     new_cases_df: pd.DataFrame,
     cumulative_df: pd.DataFrame,
     combined_df: pd.DataFrame,
+    response_df: pd.DataFrame,
+    poe_df: pd.DataFrame,
     raw_data: dict,
     output_dir: Path,
 ) -> None:
@@ -474,6 +656,14 @@ def save_outputs(
     combined_df.to_csv(
         output_dir / "combined_counts.csv", index=False, encoding="utf-8-sig"
     )
+    if not response_df.empty:
+        response_df.to_csv(
+            output_dir / "response_counts.csv", index=False, encoding="utf-8-sig"
+        )
+    if not poe_df.empty:
+        poe_df.to_csv(
+            output_dir / "poe_counts.csv", index=False, encoding="utf-8-sig"
+        )
 
     # ── Raw JSON (for auditing / re-running tests without an API call)
     with open(output_dir / "raw_extraction.json", "w", encoding="utf-8") as fh:
@@ -552,9 +742,11 @@ def _process_one(
     if not sitrep_date:
         sitrep_date = parse_french_date(data["cumulative"].get("table_title", ""))
     combined_df   = build_combined_counts(data, sitrep_date, source=pdf_path.stem)
+    response_df   = build_response_counts(data, sitrep_date, source=pdf_path.stem)
+    poe_df        = build_poe_counts(data, sitrep_date, source=pdf_path.stem)
     print(f"{tag}Saving outputs → {output_dir.name}/")
-    save_outputs(new_cases_df, cumulative_df, combined_df, data, output_dir)
-    return combined_df, data, new_cases_df, cumulative_df
+    save_outputs(new_cases_df, cumulative_df, combined_df, response_df, poe_df, data, output_dir)
+    return combined_df, data, new_cases_df, cumulative_df, response_df, poe_df
 
 
 def load_processed(path: Path) -> dict:
@@ -590,8 +782,27 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
         master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
     else:
         master = new_df.copy()
+    master = master.drop_duplicates(subset=["count_type", "sitrep_source", "zone", "count_end_date"])
     master = _sort_master(master)
     output_dir.mkdir(parents=True, exist_ok=True)
+    master.to_csv(master_path, index=False, encoding="utf-8-sig")
+    return master
+
+
+def append_to_master_generic(
+    new_df: pd.DataFrame,
+    master_path: Path,
+    dedup_subset: list[str] | None = None,
+) -> pd.DataFrame:
+    """Append rows to any master CSV; deduplicates on dedup_subset if provided."""
+    if master_path.exists():
+        existing = pd.read_csv(master_path, dtype=str, encoding="utf-8-sig").fillna("")
+        master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
+    else:
+        master = new_df.copy()
+    if dedup_subset:
+        master = master.drop_duplicates(subset=dedup_subset)
+    master_path.parent.mkdir(parents=True, exist_ok=True)
     master.to_csv(master_path, index=False, encoding="utf-8-sig")
     return master
 
@@ -634,13 +845,19 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
 
     print(f"Update mode: {len(new_pdfs)} new PDF(s) in {pdf_dir.name}/\n")
     all_new = []
+    all_response = []
+    all_poe = []
     for i, pdf_path in enumerate(new_pdfs, 1):
         stem = _canonical_output_stem(pdf_path, pdf_dir)
         per_dir = output_dir / "sitreps" / stem
-        combined_df, _, _, _ = _process_one(
+        combined_df, _, _, _, response_df, poe_df = _process_one(
             client, pdf_path, per_dir, label=f"{i}/{len(new_pdfs)}"
         )
         all_new.append(combined_df)
+        if not response_df.empty:
+            all_response.append(response_df)
+        if not poe_df.empty:
+            all_poe.append(poe_df)
         processed[pdf_path.name] = {
             "processed_at": datetime.now(timezone.utc).isoformat(),
             "rows_added": len(combined_df),
@@ -649,6 +866,18 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
 
     new_rows_df = pd.concat(all_new, ignore_index=True)
     master_df   = append_to_master(new_rows_df, output_dir)
+    if all_response:
+        append_to_master_generic(
+            pd.concat(all_response, ignore_index=True),
+            output_dir / "master_response_counts.csv",
+            dedup_subset=["date", "zone", "sitrep_source"],
+        )
+    if all_poe:
+        append_to_master_generic(
+            pd.concat(all_poe, ignore_index=True),
+            output_dir / "master_poe_counts.csv",
+            dedup_subset=["date", "sitrep_source"],
+        )
 
     save_processed(processed_path, processed)
 
@@ -744,7 +973,7 @@ def main() -> None:
 
     if n == 1:
         # ── Single-PDF: backward-compatible behaviour
-        combined_df, data, new_cases_df, cumulative_df = _process_one(
+        combined_df, data, new_cases_df, cumulative_df, response_df, poe_df = _process_one(
             client, pdf_paths[0], output_dir
         )
         print()
@@ -765,12 +994,18 @@ def main() -> None:
         # ── Batch mode: each PDF → own sub-directory, then build master
         print(f"Batch mode: {n} PDFs → {output_dir}/\n")
         all_combined = []
+        all_response = []
+        all_poe = []
         for i, pdf_path in enumerate(pdf_paths, 1):
             per_dir = output_dir / pdf_path.stem
-            combined_df, _, _, _ = _process_one(
+            combined_df, _, _, _, response_df, poe_df = _process_one(
                 client, pdf_path, per_dir, label=f"{i}/{n}"
             )
             all_combined.append(combined_df)
+            if not response_df.empty:
+                all_response.append(response_df)
+            if not poe_df.empty:
+                all_poe.append(poe_df)
             print()
 
         print("Building master linelist …")
@@ -778,6 +1013,15 @@ def main() -> None:
 
         master_csv = output_dir / "master_combined_linelist.csv"
         master_df.to_csv(master_csv, index=False, encoding="utf-8-sig")
+
+        if all_response:
+            resp_df = pd.concat(all_response, ignore_index=True)
+            resp_csv = output_dir / "master_response_counts.csv"
+            resp_df.to_csv(resp_csv, index=False, encoding="utf-8-sig")
+        if all_poe:
+            poe_df_all = pd.concat(all_poe, ignore_index=True)
+            poe_csv = output_dir / "master_poe_counts.csv"
+            poe_df_all.to_csv(poe_csv, index=False, encoding="utf-8-sig")
 
         print()
         print("═" * 55)

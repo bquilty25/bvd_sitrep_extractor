@@ -1,19 +1,19 @@
-﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes
-Ituri,Aru,4.0,,1,1.0,,
-Ituri,Bambu,6.0,,0,2.0,,
-Ituri,Bunia,249.0,,24,48.0,,
-Ituri,Kilo,8.0,,1,2.0,,
-Ituri,Mongbwalu,339.0,,19,88.0,,
-Ituri,Nizi,6.0,,2,2.0,,
-Ituri,Nyankunde,45.0,,9,11.0,,
-Ituri,Rwampara,228.0,,32,69.0,,
-Ituri,Echantillons sans fiche,0.0,,6,0.0,,
-Nord-Kivu,Butembo,7.0,,3,0.0,,
-Nord-Kivu,Goma,0.0,,1,0.0,,
-Nord-Kivu,Katwa,13.0,,4,0.0,,
-Nord-Kivu,Karissibi,0.0,,0,0.0,,
-Nord-Kivu,Kyondo,0.0,,0,0.0,,
-Nord-Kivu,Oicha,,,1,,,
-Nord-Kivu,Kalunguta,,,1,,,
-Sud-Kivu,Miti Murhesa,1.0,,1,0.0,,
-,Total,906.0,,105,223.0,,
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Aru,4.0,,1,1.0,,,0.0
+Ituri,Bambu,6.0,,0,2.0,,,183.0
+Ituri,Bunia,249.0,,24,48.0,,,404.0
+Ituri,Kilo,8.0,,1,2.0,,,0.0
+Ituri,Mongbwalu,339.0,,19,88.0,,,222.0
+Ituri,Nizi,6.0,,2,2.0,,,22.0
+Ituri,Nyankunde,45.0,,9,11.0,,,365.0
+Ituri,Rwampara,228.0,,32,69.0,,,621.0
+Ituri,Echantillons sans fiche,0.0,,6,0.0,,,0.0
+Nord-Kivu,Butembo,7.0,,3,0.0,,,22.0
+Nord-Kivu,Goma,0.0,,1,0.0,,,28.0
+Nord-Kivu,Katwa,13.0,,4,0.0,,,99.0
+Nord-Kivu,Karissibi,0.0,,0,0.0,,,249.0
+Nord-Kivu,Kyondo,0.0,,0,0.0,,,16.0
+Nord-Kivu,Oicha,,,1,,,,
+Nord-Kivu,Kalunguta,,,1,,,,
+Sud-Kivu,Miti Murhesa,1.0,,1,0.0,,,
+,Total,906.0,,105,223.0,,,2231.0

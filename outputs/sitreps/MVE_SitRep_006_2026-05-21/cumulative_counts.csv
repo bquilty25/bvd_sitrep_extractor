@@ -1,11 +1,11 @@
-﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes
-Ituri,Mongbwalu,317,,13,80,,
-Ituri,Rwampara,179,,24,44,,
-Ituri,Bunia,125,,11,31,,
-Ituri,Nyankunde,28,,5,5,,
-Ituri,Bambu,2,,1,0,,
-Ituri,Echantillons sans fiche,0,,4,0,,
-Nord-Kivu,Goma,0,,1,0,,
-Nord-Kivu,Katwa,13,,1,0,,
-Nord-Kivu,Butembo,7,,1,0,,
-,Total,671,,61,160,,
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Mongbwalu,317,,13,80,,,176.0
+Ituri,Rwampara,179,,24,44,,,621.0
+Ituri,Bunia,125,,11,31,,,203.0
+Ituri,Nyankunde,28,,5,5,,,133.0
+Ituri,Bambu,2,,1,0,,,128.0
+Ituri,Echantillons sans fiche,0,,4,0,,,0.0
+Nord-Kivu,Goma,0,,1,0,,,
+Nord-Kivu,Katwa,13,,1,0,,,
+Nord-Kivu,Butembo,7,,1,0,,,
+,,671,,61,160,,,1261.0

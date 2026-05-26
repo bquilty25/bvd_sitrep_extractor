@@ -1,2 +1,2 @@
-﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes
-Ituri,"Mongbwalu, Rwampara et Bunia (total)",246,,8,,,4
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,,246,,8,80,,4,82

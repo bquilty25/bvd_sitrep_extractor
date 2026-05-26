@@ -1,16 +1,17 @@
-﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes
-Ituri,Bunia,0,0,0,,,0
-Ituri,Rwampara,0,0,0,,,0
-Ituri,Mongbwalu,0,0,0,,,0
-Ituri,Aru,0,0,0,,,0
-Ituri,Nyankunde,0,0,0,,,0
-Ituri,Nizi,1,0,0,,,0
-Ituri,Kilo,1,0,0,,,0
-Ituri,,2,0,0,,,0
-Nord-Kivu,Goma,0,0,0,,,0
-Nord-Kivu,Butembo,0,0,2,,,0
-Nord-Kivu,Katwa,0,0,0,,,0
-Nord-Kivu,Oicha,0,0,1,,,0
-Nord-Kivu,Kalunguta,0,0,1,,,0
-Sud-Kivu,Miti Murhesa,0,0,0,,,0
-,Total,2,0,4,,,0
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Bunia,,,0,,,0,0.0
+Ituri,Rwampara,,,0,,,0,0.0
+Ituri,Mongbwalu,,,0,,,0,0.0
+Ituri,Aru,,,0,,,0,
+Ituri,Nyankunde,,,0,,,0,0.0
+Ituri,Nizi,1,,0,,,0,0.0
+Ituri,Kilo,1,,0,,,0,
+Ituri,,2,0,0,,,0,0.0
+Nord-Kivu,Goma,,,0,,,0,
+Nord-Kivu,Butembo,,,2,,,0,
+Nord-Kivu,Katwa,,,0,,,0,
+Nord-Kivu,Oicha,,,1,,,0,
+Nord-Kivu,Kalunguta,,,1,,,0,
+Sud-Kivu,Miti Murhesa,,,0,,,0,
+,Sous total Nord-Kivu/Sud-Kivu,0,0,4,,,0,0.0
+,Total,2,0,4,,,0,0.0

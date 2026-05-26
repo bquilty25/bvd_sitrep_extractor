@@ -1,2 +1,2 @@
-﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,zone,province,sitrep_source,is_aggregate
-01/04/2026,13/05/2026,Cumules,246,,8,,,4,"Mongbwalu, Rwampara et Bunia (total)",Ituri,Draft-MVE-Ituri-ActuelB-1,TRUE
+﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
+01/04/2026,14/05/2026,Cumules,246,,8,80,,4,82,,Ituri,Draft-MVE-Ituri-ActuelB-1,TRUE
