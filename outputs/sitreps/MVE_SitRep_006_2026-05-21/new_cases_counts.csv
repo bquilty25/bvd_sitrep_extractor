@@ -1,0 +1,12 @@
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes
+Ituri,Bunia,35.0,,5,,,0
+Ituri,Rwampara,25.0,,3,,,0
+Ituri,Mungbwalu,8.0,,0,,,0
+Ituri,Bambu,1.0,,1,,,0
+Ituri,Nyankunde,9.0,,3,,,0
+Ituri,Sous total,78.0,0,12,,,0
+Nord-Kivu,Goma,,,0,,,0
+Nord-Kivu,Butembo,,,0,,,0
+Nord-Kivu,Katwa,,,1,,,0
+Nord-Kivu,Sous total,0.0,0,1,,,0
+,Total,78.0,0,13,,,0

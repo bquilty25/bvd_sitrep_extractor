@@ -15,9 +15,6 @@ env/
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
 
-# Raw per-sitrep extraction files (large, rebuilable — do not commit)
-outputs/sitreps/
-
 # OS
 .DS_Store
 Thumbs.db

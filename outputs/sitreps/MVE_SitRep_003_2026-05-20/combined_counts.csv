@@ -1,0 +1,11 @@
+﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,zone,province,sitrep_source,is_aggregate
+20/05/2026,20/05/2026,Nouveaux,,,18,,,,,Ituri,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,TRUE
+20/05/2026,20/05/2026,Nouveaux,,,2,,,,,Nord-Kivu,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,TRUE
+,18/05/2026,Cumules,302,,1,74,,,Mongbwalu,Ituri,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,136,,19,38,,,Rwampara,Ituri,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,61,,6,18,,,Bunia,Ituri,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,14,,4,1,,,Nyankunde,Ituri,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,1,,1,0,,,Goma,Nord-Kivu,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,1,,1,0,,,Katwa,Nord-Kivu,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,1,,1,0,,,Butembo,Nord-Kivu,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,FALSE
+,18/05/2026,Cumules,516,,33,131,,,Total,,Sitrep_MVE-Ituri_N°004-au-20-mai-2026,TRUE

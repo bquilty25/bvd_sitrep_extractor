@@ -1,0 +1,371 @@
+{
+  "new_cases": {
+    "table_title": "Tableau I. Répartition des cas et décès confirmés par zone de santé dans les provinces touchées en date du 24/05/2026",
+    "reporting_date": "24/05/2026",
+    "period_end_date": "24/05/2026",
+    "period_start_date": "",
+    "columns": [
+      "province",
+      "zone_de_sante",
+      "cas_suspects",
+      "cas_probables",
+      "cas_confirmes",
+      "deces_suspects",
+      "deces_probables",
+      "deces_confirmes"
+    ],
+    "rows": [
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Bunia",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Rwampara",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Mongbwalu",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Aru",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Nyankunde",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Nizi",
+        "cas_suspects": "1",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Kilo",
+        "cas_suspects": "1",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "",
+        "cas_suspects": "2",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Goma",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Butembo",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "2",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Katwa",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Oicha",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "1",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Kalunguta",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "1",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "Sud-Kivu",
+        "zone_de_sante": "Miti Murhesa",
+        "cas_suspects": "0",
+        "cas_probables": "0",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      },
+      {
+        "province": "",
+        "zone_de_sante": "Total",
+        "cas_suspects": "2",
+        "cas_probables": "0",
+        "cas_confirmes": "4",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": "0"
+      }
+    ],
+    "notes": "* Le rapport du 24 mai comportait une erreur de saisie de chiffres. ** Ces données sont susceptibles de modifications avec l'évolution de réception des données. *** : Nous n'avons reçu que les résultats de Labo positif sans les autres détails"
+  },
+  "cumulative": {
+    "table_title": "Tableau II. Répartition des cas, décès suspects et confirmés de maladie à virus Ebola dans les zones de santé de la DPS Ituri, Nord-Kivu et Sud Kivu au 24 mai 2026",
+    "reporting_date": "24/05/2026",
+    "period_end_date": "24/05/2026",
+    "period_start_date": "",
+    "columns": [
+      "province",
+      "zone_de_sante",
+      "cas_suspects",
+      "cas_probables",
+      "cas_confirmes",
+      "deces_suspects",
+      "deces_probables",
+      "deces_confirmes"
+    ],
+    "rows": [
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Aru",
+        "cas_suspects": "4",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "1",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Bambu",
+        "cas_suspects": "6",
+        "cas_probables": "",
+        "cas_confirmes": "0",
+        "deces_suspects": "2",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Bunia",
+        "cas_suspects": "249",
+        "cas_probables": "",
+        "cas_confirmes": "24",
+        "deces_suspects": "48",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Kilo",
+        "cas_suspects": "8",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "2",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Mongbwalu",
+        "cas_suspects": "339",
+        "cas_probables": "",
+        "cas_confirmes": "19",
+        "deces_suspects": "88",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Nizi",
+        "cas_suspects": "6",
+        "cas_probables": "",
+        "cas_confirmes": "2",
+        "deces_suspects": "2",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Nyankunde",
+        "cas_suspects": "45",
+        "cas_probables": "",
+        "cas_confirmes": "9",
+        "deces_suspects": "11",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Rwampara",
+        "cas_suspects": "228",
+        "cas_probables": "",
+        "cas_confirmes": "32",
+        "deces_suspects": "69",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Echantillons sans fiche",
+        "cas_suspects": "0",
+        "cas_probables": "",
+        "cas_confirmes": "6",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Butembo",
+        "cas_suspects": "7",
+        "cas_probables": "",
+        "cas_confirmes": "3",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Goma",
+        "cas_suspects": "0",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Katwa",
+        "cas_suspects": "13",
+        "cas_probables": "",
+        "cas_confirmes": "4",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Karissibi",
+        "cas_suspects": "0",
+        "cas_probables": "",
+        "cas_confirmes": "0",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Kyondo",
+        "cas_suspects": "0",
+        "cas_probables": "",
+        "cas_confirmes": "0",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Oicha",
+        "cas_suspects": "",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Nord-Kivu",
+        "zone_de_sante": "Kalunguta",
+        "cas_suspects": "",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Sud-Kivu",
+        "zone_de_sante": "Miti Murhesa",
+        "cas_suspects": "1",
+        "cas_probables": "",
+        "cas_confirmes": "1",
+        "deces_suspects": "0",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "",
+        "zone_de_sante": "Total",
+        "cas_suspects": "906",
+        "cas_probables": "",
+        "cas_confirmes": "105",
+        "deces_suspects": "223",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      }
+    ],
+    "notes": "*Ces données sont susceptibles de changer après harmonisation des données à différents niveaux de la pyramide sanitaire avec le système de gestion des incidents. ***: Nous avons reçu les résultats positifs de 4 échantillons sans les détails par rapport au nombre d'échantillons reçus et analysés pour la journée du 24/05/2026."
+  },
+  "full_text": "# Transcription complète du PDF\n\n---\n\n## PAGE 1\n\n²\n\n| Provinces touchées (3) | ITURI, NORD-KIVU & SUD-KIVU |\n|---|---|\n| Zones de Santé touchées (13) | ITURI : Aru, Bunia, Kilo, Mongbwalu, Nizi, Nyankunde et Rwampara NORD-KIVU : Butembo, Goma, Oicha, Kalunguta et Katwa SUD-KIVU : Miti-Murhesa |\n| Date de rapportage | 24 mai 2026 |\n| Date de publication | 25 mai 2026 |\n\n**Tableau I. Répartition des cas et décès confirmés par zone de santé dans les provinces touchées en date du 24/05/2026**\n\n| Provinces touchées | Zones de santé avec cas confirmés | Nouveaux Cas confirmés | Décès parmi confirmés | Cas probables | Cas suspects | Contacts listés** | Guéris du jour |\n|---|---|---|---|---|---|---|---|\n| | Bunia | 0 | 0 | ND | ND | 0 | 0 |\n| | Rwampara | 0 | 0 | ND | ND | 0 | 0 |\n| | Mongbwalu | 0 | 0 | ND | ND | 0 | 0 |\n| Ituri | Aru | 0 | 0 | ND | ND | ND | 0 |\n| | Nyankunde | 0 | 0 | ND | ND | 0 | 0 |\n| | Nizi | 0 | 0 | ND | 1 | 0 | 0 |\n| | Kilo | 0 | 0 | ND | 1 | ND | 0 |\n| **Sous total** | | **0** | **0** | **0** | **2** | **ND** | **0** |\n| | Goma | 0 | 0 | ND | ND | ND | 0 |\n| | Butembo | 2 | 0 | ND | ND | ND | 0 |\n| Nord-Kivu | Katwa | 0 | 0 | ND | ND | ND | 0 |\n| | Oicha*** | 1 | 0 | ND | ND | ND | 0 |\n| | Kalunguta*** | 1 | 0 | ND | ND | ND | 0 |\n| Sud Kivu | Miti Murhesa | 0 | 0 | ND | ND | ND | 0 |\n| **Sous total** | | **4** | **0** | **0** | **0** | **0** | **0** |\n| **Total** | | **4** | **0** | **0** | **2** | **0** | **0** |\n\n\\* Le rapport du 24 mai comportait une erreur de saisie de chiffres.\n\\*\\* Ces données sont susceptibles de modifications avec l'évolution de réception des données.\n\\*\\*\\* : Nous n'avons reçu que les résultats de Labo positif sans les autres détails\n\n**Centre d'Opérations d'Urgence de Santé Publique**\n**« COUSP RDC »**\n**Système de Gestion de l'Incident MVE-17**\n\n**Rapport de Situation de la 17ème Epidémie de la Maladie à Virus EBOLA /RDC**\n**SitRep N°010/MVB_25/2026**\n\n| 105 | 10 | 906 | 223* | ND | ND | 0 | ND |\n|---|---|---|---|---|---|---|---|\n| Cumul cas confirmés | Cumul décès parmi les confirmés | Cumul cas suspects | Cumul Décès suspects | Taux d'occupation chez les suspects | Taux d'occupation chez les confirmés | Guéris | Cumul cas confirmés CTE |\n\n---\n\n## PAGE 2\n\n**I. CONTEXTE**\n\nLa Province de l'Ituri est située au Nord-Est de la République Démocratique du Congo et partage une longue frontière avec l'Ouganda et le Soudan du Sud. Depuis plus de deux décennies, elle est confrontée à une crise humanitaire chronique liées aux conflits armés et des déplacements récurrents des populations. Elle compte une population estimée à plus de 8 millions d'habitants parmi lesquels plus d'un million de déplacés internes.\n\nEn septembre 2018, cette province était touchée par une épidémie de la maladie à virus Ebola qui sévissait dans la province voisine du Nord-Kivu.\n\nLa zone de santé de Mongbwalu est l'une des 36 zones de santé de la province de l'Ituri. Considérée comme point de départ de l'épidémie elle est située dans le territoire de Djugu où opèrent plusieurs groupes armés. Elle est située à 70 km de Bunia, chef-lieu de la province de l'Ituri, avec des mouvements fréquents des populations vers l'Ouganda. Cette localité a une particularité d'avoir plusieurs chantiers qui attirent les populations venant des autres territoires de la province et des provinces voisines.\n\n**II. HISTORIQUE DE L'EPIDEMIE**\n\nEn date du 05 mai 2026, les réseaux sociaux déclarent une flambée de décès de cause inconnue avec près de 50 décès déjà enregistrés dans la zone de santé de Mongbwalu. Après la validation des alertes, le Médecin chef de la zone de santé de Mongbwalu partage le rapport de l'investigation préliminaire le 09 mai 2026. Le 11 mai 2026, les autorités sanitaires provinciales organisent une réunion d'urgence et décident de déployer des équipes d'intervention rapide (EIR) à Mongbwalu et Rwampara qui avaient rapporté des décès suspects de fièvre hémorragique virale chez des malades internés au Centre médical Evangélique de Rwampara, provenant de Mongbwalu.\n\nLes investigations menées le 12 mai 2026, simultanément dans les zones de santé de Mongbwalu et de Rwampara par les Equipes d'Intervention Rapide de la Division provinciale de la santé (DPS) de l'Ituri ont permis de relever que la plupart des patients ou décès suspects avaient la fièvre, les céphalées, les vomissements, une asthénie physique intense. Les décès survenaient 2 à 3 jours après le début de la maladie dans un tableau d'hématémèse, épistaxis ou de vomissement noirâtre. Au cours des investigations dans la zone de santé de Rwampara, 20 échantillons sur les cas ou décès suspects ont été effectués. La majorité des personnes prélevées provenaient de la zone de santé de Mongbwalu. Les tests préliminaires effectués au Laboratoire de Bunia étaient tous négatifs pour Ebola zaïre, dengue, Rotavirus, Cholera, Paludisme, Yersinia pestis, mpox et COVID-19. Ces échantillons ont été envoyés à l'Institut National de Recherche Biomédicale (INRB) de Kinshasa pour des examens additionnels.\n\nEn date du 14 mai 2026, 13 cas de ces 20 échantillons ont été testés et 8 se sont révélés positifs à la maladie à virus Ebola non-Zaïre à l'INRB Kinshasa. Le 15 mai 2026, le séquençage des échantillons positifs a permis d'identifier la souche BUNDIBUGYO, ce qui a permis au ministre de la Santé Publique, Hygiène et Prévoyance Sociale (MSHPS) de déclarer officiellement la 17ème épidémie de la maladie à virus Ebola en République Démocratique du Congo.\n\nEn date du 17 Mai 2026, en concertation avec les états membres, le Directeur général de l'OMS estime que l'événement qui se passe en RDC et en Ouganda répondent aux critères de la définition énoncés à l'article 1 du RSI, et a déclaré que cela constitue une Urgence de Santé Publique de Portée Internationale tout en précisant que le risque au niveau mondial est faible mais élevé au niveau régional.\n\n---\n\n## PAGE 3\n\nLe 18 mai 2026, le Directeur général du CDC Afrique a officiellement déclaré une urgence de santé publique de sécurité continentale (USPSC) en vertu de l'article 3 de ses statuts. Cette déclaration faisait suite à une réunion d'urgence du groupe consultatif du CDC Afrique, qui a estimé que l'aggravation de l'épidémie constituait un risque aigu pour la sécurité sanitaire continentale. En conséquence, l'équipe continentale de soutien à la gestion des incidents a été activée afin d'apporter son soutien aux États membres touchés et à ceux exposés aux risques, en matière de réponse et de préparation.\n\n**CHRONOLOGIE DES EVENEMENTS**\n\n[Chronologie graphique et carte épidémiologique]\n\n**III. MISE A JOUR DE LA SITUATION EPIDEMIOLOGIQUE**\n\n❑ Aucun échantillon n'a été analysé en Ituri.\n❑ Provinces touchées : ITURI, NORD-KIVU et SUD-KIVU\n❑ Cumul de cas confirmés 24 mai 2026 : 105 cas dont 94 en Ituri, 10 au Nord-Kivu et 1 au Sud-Kivu\n❑ ITURI : épicentre avec 7/36 ZS touchées (Aru, Bunia, Kilo, Rwampara, Mongbwalu, Nizi et Nyankunde)\n❑ NORD-KIVU : 5/35 ZS touchées (Goma, Butembo, Oicha, Kalunguta et Katwa)\n❑ SUD-KIVU : 1/34 ZS touchée (Miti-Murhesa)\n❑ Parmi les 10 décès confirmés, 6 de sexe masculin (dont 5 âgés de plus de 15 ans et 1 de moins de 15 ans) et 4 de sexe féminin (dont 3 âgés de plus de 15 ans et 1 de moins de 15 ans)\n\n**IV. ACTIONS DE LA REPONSE REALISEES**\n\n**IV.1. COORDINATION**\n\n● Tenue de réunion stratégique autour du Gouverneur\n\n**IV.2. SURVEILLANCE EPIDEMIOLOGIQUE**\n\n- Briefing sur le tracking des alertes au niveau de la DPS en incluant les membres de la protection civile (2 personnes) ;\n- Réalisation des activités de surveillance sur terrain (remontée des alertes, investigations, recherche active, listage et suivi des contacts, revue documentaire rétrospective des cas et décès, etc) ;\n\n---\n\n## PAGE 4\n\n**Tableau II. Répartition des cas, décès suspects et confirmés de maladie à virus Ebola dans les zones de santé de la DPS Ituri, Nord-Kivu et Sud Kivu au 24 mai 2026**\n\n| Provinces | Zones de santé | Nbre de cas suspects | Nbre de décès suspects* | Nbre de cas Confirmés | Nbre de contacts* |\n|---|---|---|---|---|---|\n| | Aru | 4 | 1 | 1 | 0 |\n| | Bambu | 6 | 2 | 0 | 183 |\n| | Bunia | 249 | 48 | 24 | 404 |\n| | Kilo | 8 | 2 | 1 | 0 |\n| **Ituri** | Mongbwalu | 339 | 88 | 19 | 222 |\n| | Nizi | 6 | 2 | 2 | 22 |\n| | Nyankunde | 45 | 11 | 9 | 365 |\n| | Rwampara | 228 | 69 | 32 | 621 |\n| | Echantillons sans fiche | 0 | 0 | 6 | 0 |\n| | Butembo | 7 | 0 | 3 | 22 |\n| | Goma | 0 | 0 | 1 | 28 |\n| | Katwa | 13 | 0 | 4 | 99 |\n| **Nord-Kivu** | Karissibi | 0 | 0 | 0 | 249 |\n| | Kyondo | 0 | 0 | 0 | 16 |\n| | Oicha** | ND | ND | 1 | ND |\n| | Kalunguta** | ND | ND | 1 | ND |\n| **Sud-Kivu** | Miti Murhesa | 1 | 0 | 1 | ND |\n| **Total** | | **906** | **223** | **105** | **2231** |\n\n\\*Ces données sont susceptibles de changer après harmonisation des données à différents niveaux de la pyramide sanitaire avec le système de gestion des incidents.\n\\*\\*\\*: Nous avons reçu les résultats positifs de 4 échantillons sans les détails par rapport au nombre d'échantillons reçus et analysés pour la journée du 24/05/2026.\n\n**Surveillance aux Points d'entrées et Points de contrôle (PoE/PoC) :**\n\n- Activations des 6 PoC : Aéroport, Dele, Mudzibala, Chai et Iga-barrière et Nizi avec appui de l'OIM.\n\n**Tableau III. Synthèse de données au PoE/PoC du 24/05/2026**\n\n| PoE/PoC | TOTAL |\n|---|---|\n| Voyageurs passés par le PoE/PoC | 11628 |\n| Voyageurs screenés | 11143 |\n| Voyageurs ayant lavés les mains | 11413 |\n| Voyageurs sensibilisés sur la MVE | 11628 |\n| Contacts listés | 0 |\n| Alertes remontées | 0 |\n\n---\n\n## PAGE 5\n\n**IV.3. LABORATOIRE**\n\n- 20 techniciens ont été briefés sur la gestion des déchets avec l'appui de STRIDES ;\n\n| Echantillons | Total |\n|---|---|\n| Echantillons reçus | 431 |\n| Ré prélèvements (contrôle) | 3 |\n| Cumul échantillons analysés | 295 |\n| Taux de positivité | 35,6% |\n| Cumul positifs | 105* |\n\n\\*Nous avons reçu les résultats positifs de 4 échantillons sans les détails par rapport au nombre reçu et analysés pour la journée du 24/05\n\n**IV.4. PREVENTION & CONTRÔLE DE L'INFECTION**\n\n❑ Briefing de prestataires des ESS (Clinique KARIBUNI, CITADELLE, CH-UNIBU, CS Adventiste, Polyclinique Limbi Angaika & JESUS EST SAUVEUR CBCA, … sur la gestion des déchets et le bionettoyage, l'importance d'hygiène des mains, le port d'EPI.\n❑ Évaluation initiale de score card à la Clinique la RECONNAISSANCE (46%) ; des ESS des AS Jésus est sauveur CBCA (20%), AS Bunia Cité (49%) et CH Rwankole (21%).\n\n**IV.5. PRISE EN CHARGE HOLISTIQUE**\n\n- Briefing de 32 prestataires de l'HGR Bunia sur la PEC (2 médecins, 8 infirmiers et 22 hygiénistes).\n- Réalisation de la cartographie des évadés à partir de listes contenant leurs adresses.\n- Démarrage des travaux de construction du CTE à l'HGR Bunia par le partenaire IMC.\n- Optimisation des soins effective à l'HGR Bunia et à l'HGR Rwampara.\n- Briefing des prestataires de l'HGR Rwampara sur la PEC nutritionnel.\n- Réception de 50 boites les nourrissons de moins de 6 mois.\n\nActivation du PoC de Nizi\n\n---\n\n## PAGE 6\n\n**Tableau VI. Mouvement des malades dans les établissements de soins en date du 24/05/2026**\n\n| Indicateurs | HGR Bunia | SOFEPADI | Clinique Bénedicte | CH ELIKYA | CM LES MERITES | CITADELE | UNIBU | CH LA PROVIDENCE RWAKOLE | CM MATHYSEN | SOUS TOTAL BUNIA | HGR RWAMPARA | CH SALAMA | CME | SOUS TOTAL RWAMPARA | HGR MONGBWALU | HGR NYANKUNDE | HGR BAMBU | HGR ARU | Total |\n|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|\n| Report (Nbre de malades au lit à la fin de journeée précédente) | 10 | 7 | 2 | 2 | 2 | 7 | 2 | 2 | 8 | 2 | 44 | 7 | 2 | 10 | 19 | 13 | 33 | 2 | 2 | 113 |\n| Nouvelles Admissions du jour PPL | 0 | 3 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 3 | 2 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | 5 |\n| Nouvelles Admissions du jour Autres | 1 | 0 | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 1 | 6 | 1 | 1 | 2 | 4 | 5 | 0 | 0 | 0 | 15 |\n| Total admissions du jour | 1 | 3 | 0 | 2 | 2 | 0 | 0 | 0 | 0 | 1 | 9 | 3 | 1 | 2 | 6 | 5 | 0 | 0 | 0 | 20 |\n| Effectif total en isolement | 11 | 10 | 2 | 4 | 4 | 7 | 2 | 2 | 8 | 3 | 53 | 10 | 3 | 12 | 25 | 18 | 33 | 2 | 2 | 133 |\n| Cumul de malades admis en isolement | 61 | 13 | 4 | 8 | 4 | 7 | 5 | 2 | 11 | 3 | 118 | 38 | 16 | ND | 54 | 70 | 36 | 0 | 3 | 281 |\n| Sorties Guéris | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 |\n| Sorties Décédés | 0 | 2 | 0 | 2 | 0 | 1 | 0 | 1 | 0 | 1 | 7 | 1 | 0 | 1 | 2 | 1 | 0 | 0 | 0 | 10 |\n| Cumul des décès | 42 | 6 | 0 | 4 | 1 | 2 | 2 | 2 | 3 | 2 | 64 | 12 | 0 | 24 | 36 | 49 | 1 | 0 | 1 | 151 |\n| Non Cas | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 0 | 2 |\n| Evadés | 0 | 3 | 0 | 1 | 0 | 0 | 0 | 0 | 0 | 0 | 4 | 2 | 0 | 0 | 2 | 0 | 0 | 0 | 0 | 6 |\n| Transférés à HGR | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 2 | 0 | 2 | 0 | 0 | 0 | 0 | 2 |\n\n**IV.6. CREC**\n\n- Près de 1 735 personnes (294 hommes, 338 femmes, 691 filles, 519 garçons) sensibilisées par les volontaires de la Croix-Rouge au cours des VAD.\n- Engagement du chef de la Chefferie de Bahema Irumu à renforcer la sensibilisation de la population de son entité coutumière sur le respect des différentes mesures de la riposte à la MVE. Un message vocal (sonore) a été enregistré en Swahili et en langue locale (Kihema) pour être diffuser à travers différents canaux de communication.\n- Parallèlement, le coordonnateur a de la Société Civile Forces Vives de l'Ituri eu enregistré un message vocal à diffuser par à travers les canaux de communication (soutien des actions de riposte par la vulgarisation du communiqué du Gouverneur Militaire sur les différentes mesures préventives de la MVE notamment l'EDS, l'interdiction des veillées mortuaires et le transport des corps sans vie.\n- **Levée d'une résistance** à l'EDS brisée après la sensibilisation des membres de la famille éprouvées au Centre Hospitalier UNIBU au quartier Lumumba (ZS Bunia).\n- Au cours des différentes cultes des églises catholiques et autres communautés chrétiennes (Bunia et Mahagi), les messages de prévention de la MVE ont été diffusés à l'intention d'un total de 6 700 fidèles.\n\n---\n\n## PAGE 7\n\n**IV.7. LOGISTIQUE**\n\n- Approvisionnement en intrants PCI aux ESS de référence (CSR Lembabo, HGR Kilo, HGR Mogbwalu, HGR Lita).\n- Finalisation d'installation de deux tentes de prise en charge à l'HGR Bunia (avec 8 chambres et 8 toilettes)\n- Poursuite des travaux d'installation de tentes d'isolement au HGR Rwampara.\n- Réception de 330 litres de carburants (Appui FHI360).\n\n**IV.8. SECURITE**\n\n- La situation sécurité dans la ville de Bunia (ZS de Bunia et Rwampara) est relativement calme\n- Briefing sécuritaire aux équipes nouvellement déployées.\n- Monitoring de l'incident (incendie d'isolement de HGR Mongbwalu).\n\n**V. DEFIS**\n\n- 24 heures de rupture en Kits d'analyse RADIONE ;\n- Absence de Centre Transit et Centre de Traitement Ebola normés en Ituri,\n- Manque des matériels PCI (EPI, DLM, chlore) au Nord Kivu\n- Faible remontée des alertes par les zones dans les 3 Provinces touchées (Ituri, Nord-Kivu et Sud-Kivu) ;\n- Insuffisance des ressources financières pour appuyer tous les piliers de la riposte dans les ZS touchées ;\n- Difficulté d'acheminements des échantillons vers les laboratoires de Goma et Kinshasa.\n- Propagation des rumeurs et prolifération des recettes de traitement traditionnel.\n- Absence des supports et outils de communication.\n- Faible capacité de diagnostic\n- Quantité insuffisante en intrants et réactifs,\n- Insécurité dans les zones de santé d'intervention (Incendie de CT de Rwampara, Mongbwalu.\n\n**VI. PERSPECTIVES**\n\n- Formation des prestataires sur la surveillance de la MVE et la SBC dans les ZS touchées et à haut risque de trois provinces touchées ;\n- Formation des Agents communautaires sur la surveillance de la MVE et la SBC dans les ZS touchées et à haut risque de la province d'ITURI.\n\n---\n\n## PAGE 8\n\n**PHOTOS DE TERRAIN**\n\n*Poursuite des travaux d'aménagement du CTE Rwampara*\n\n*Finalisation d'installation de deux tentes de prise en charge à l'HGR Bunia (avec 8 chambres et 8 toilettes)*\n\n*Séance de travail d'harmonisation des données et production de rapport de situation*\n\n---\n\n## PAGE 9\n\n**POUR TOUTE INFORMATION SUPPLÉMENTAIRE, VEUILLEZ CONTACTER**\n\n**Pour l'Institut National de la Santé Publique (INSP) de la RDC**\n\n**Le Directeur Général de l'INSP**\nDr MWAMBA KAZADI Dieudonné\nE-mail : dieudonne.mwamba@insp.cd\nTel. : +243 816 040 145\n\n**Le Coordonnateur COU-SP**\nProf NGANDU Christian\nE-mail : Christian.ngandu@insp.cd\nTél. : +243998091915\n\n**L'Incident Manager**\nProf Pierre AKILIMALI\nE-mail : pierre.akilimali@insp.cd\nTél. : +243815800288\n\n**Pour l'Organisation Mondiale de la Santé (OMS/RDC)**\n\n**Le Représentant ai de l'OMS en RDC**\nDr Anne Marie ANCIA\nE-mail : anciaa @who.int\n\n**Le Team Lead Cluster EPR de l'OMS en RDC**\nDr FOTSING Richard\nE-mail: fotsingri@who.int\n\n**Pour l'Africa CDC**\nJustus Nsio Mbeta\nE-mail : JustusNs@africacdc.org\n\n[Logos partenaires : INSP, OMS, UNICEF, AfricaCDC, OIM, CDC, RTI, AFENET, World Food Programme, UNHCR, La Banque Mondiale, TG-PDSS, PMNS, Health Emergency Preparedness & Response, 3iii, US Department of State, STRIDES, EpiC, fhi360, Médecine Sans Frontières, Croix-Rouge, +C IFRC, INCEF, RESOLVE TO SAVE LIVES, International Medical Corps, ÉPNCPS, CCUS]"
+}

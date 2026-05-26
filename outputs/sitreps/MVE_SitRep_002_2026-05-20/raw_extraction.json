@@ -1,0 +1,78 @@
+{
+  "new_cases": {
+    "table_title": "",
+    "period_end_date": "",
+    "period_start_date": "",
+    "columns": [
+      "province",
+      "zone_de_sante",
+      "cas_suspects",
+      "cas_probables",
+      "cas_confirmes",
+      "deces_suspects",
+      "deces_probables",
+      "deces_confirmes"
+    ],
+    "rows": [],
+    "notes": ""
+  },
+  "cumulative": {
+    "table_title": "Tableau 1. Répartition des alertes reçues, validées et investiguées par Zone de santé",
+    "period_end_date": "15/05/2026",
+    "period_start_date": "01/04/2026",
+    "columns": [
+      "province",
+      "zone_de_sante",
+      "cas_suspects",
+      "cas_probables",
+      "cas_confirmes",
+      "deces_suspects",
+      "deces_probables",
+      "deces_confirmes"
+    ],
+    "rows": [
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Mongbwalu",
+        "cas_suspects": "",
+        "cas_probables": "57",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Rwampara",
+        "cas_suspects": "",
+        "cas_probables": "27",
+        "cas_confirmes": "13",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Bunia",
+        "cas_suspects": "",
+        "cas_probables": "3",
+        "cas_confirmes": "0",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      },
+      {
+        "province": "Ituri",
+        "zone_de_sante": "Total",
+        "cas_suspects": "246",
+        "cas_probables": "87",
+        "cas_confirmes": "13",
+        "deces_suspects": "",
+        "deces_probables": "",
+        "deces_confirmes": ""
+      }
+    ],
+    "notes": "The source table (Tableau 1) tracks alerts and investigations; its column headers include 'alertes reçues' and 'cas investigués'. However, it also contains explicit case-count rows (Cas Confirmés, Cas Probables) per zone. The cumulative summary row figures for cas_suspects (246) and cas_confirmes (13) are drawn from the document header dashboard for the same reporting period. Cas Probables per zone are taken directly from Tableau 1. No confirmed deaths (décès confirmés) figure is provided in the document (listed as ND)."
+  },
+  "full_text": "I'll start with the full transcription of the document, then provide the structured JSON extraction.\n\n---\n\n# PART 1 — FULL DOCUMENT TRANSCRIPTION\n\n---\n\n## Page 1\n\n**MINISTÈRE DE LA SANTÉ PUBLIQUE, HYGIÈNE ET PRÉVOYANCE SOCIALE**\n\n**Institut National de Santé Publique**\n\n---\n\n# Centre des Opérations d'urgences de Santé Publique « COUSP-RDC »\n\n---\n\n## Rapport de Situation de la Maladie à Virus Ebola/17ème Epidémie\n\n### SitRep MVE N° 002/2026\n\n| Pays/Province          | RDC/Ituri                    |\n|------------------------|------------------------------|\n| Zone de Santé touchée  | Mongbwalu, Bunia et Rwampara |\n| Date de rapportage     | 17 Mai 2026                  |\n| Date de publication    | 18 Mai 2026                  |\n\n---\n\n| 340     | 336                   | 13              | 246          | ND               | ND                                              | ND                                               | 0      |\n|---------|-----------------------|-----------------|--------------|------------------|-------------------------------------------------|--------------------------------------------------|--------|\n| Alertes | Alertes investiguées  | Cas Confirmés   | Cas Suspects | Décès confirmés  | Taux d'occupation des lits chez les confirmés   | Taux d'occupation des lits chez les suspects     | Guéris |\n\n---\n\n### I. POINTS SAILLANTS\n\n- Déclaration de la 17em épidémie de la MVE dans les ZS de Bunia, Rwampara et Mongbwalu dans la province de l'ITURI par son Excellence Ministre de la Sante Hygiène et Prévoyance Social (15 mai 26).\n- Elaboration en cours du plan de la réponse de la 17éme épidémie de la MVE ;\n- Investigation et prélèvement d'un cas suspect à Kinshasa en provenance de Butembo / Nord Kivu ;\n- 3 ZS /36 sont affectées dont Bunia, Rwampara et Mongbwalu.\n- 13 cas revenus positifs sur 20 échantillons prélevés dans la ZS Rwampara à l'Ebola non Zaïre (Sudan Ebola virus)\n\n*Sitrep Maladie à Virus Ebola / RDC / N°002/ 2026* — **Page 1**\n\n---\n\n## Page 2\n\n### Contexte et justification\n\nLe COUSP/RDC a capté une alerte signalant des décès groupés d'étiologie inconnue dans la Zone de Santé de Mongbwalu (90 Km de Bunia), territoire de Djugu dans la province de l'Ituri, qui elle, est située dans la partie Est de la République démocratique du Congo.\n\nUn signal sanitaire préalable daté du 05 mai 2026 émanant du personnel de santé de la zone de santé de Mongbwalu avant d'être officiellement notifiée le 8 mai suite à des signalements de décès groupés inexpliqués (50 décès via les réseaux sociaux). Entre le 1er Avril et le 13 mai 2026, 261 – 280 suspects et probable dont 100 décès (55 intra hospitaliers et 45 décès communautaire dans la zone de santé de Mongbwalu) ont été rapportés, parmi lesquels 4 décès, tous professionnels de santé. Tous ces cas provenaient des Zones de Santé (ZS) de Mongbwalu, Rwampara et Bunia. Le foyer se situe dans le Quartier Shun (ou Sun 1) à Mongbwalu (avenues Alimasi 1 et 2).\n\nL'événement serait survenu dans un contexte de forte suspicion d'épidémie communautaire, initialement marqué par des décès rapides et inexpliqués, dont certains cas seraient liés à des pratiques de manipulation de corps et de rituels funéraires à risque et les groupes de prière.\n\nAprès la revue de décès intrahospitaliers quelques signes cliniques communs tels que fièvre, céphalée, vomissement, asthénie physique intense dans la majorité de cas et dyspnée, hématémèse épistaxis, vomissement noirâtre chez d'autres cas ont été notés.\n\nLes investigations menées par l'EIR ont permis de prélever 28 échantillons sur les cas suspects. Initialement, les tests préliminaires effectués à l'INRB/Bunia étaient tous négatifs pour Ebola zaïre, dengue, Rotavirus, Cholera, Paludisme, Yersinia pestis, MPOX et COVID-19 avant d'acheminer 13 de ces échantillons à l'INRB/Kinshasa pour analyses approfondies.\n\nEn date du 14 mai 2026, **8 cas se sont révélés positifs à la maladie à virus Ebola de la souche Bundibugyo/Ouganda** identifiée après séquençage. D'où la confirmation de la **17ème épidémie de la maladie à virus Ebola en RDC**.\n\n---\n\n### II. MISE A JOUR DE LA SITUATION EPIDEMIOLOGIQUE\n\n*Sur la période du 1er avril au 14 mai 2026, un relevé de 256 dossiers de malades a été effectué à l'HGR de Mongbwalu, dont 141 cas en avril et 115 cas en mai. Au total, 57 décès ont été enregistrés, dont 34 en avril et 23 en mai.*\n\n*Après une réunion avec les cinq IT des aires de santé CECA 20, Notre Dame, Abelkozo, Ituri et Mongbwalu, 45 décès communautaires ont été rapportés, dont 26 à CECA 20 et 19 à Mongbwalu. Parmi ces décès, 15 sont survenus dans une même famille de l'AS de Mongbwalu, dont 5 à Bunia, après une réunion familiale, sur une période de deux semaines.*\n\n*Les personnes décédées présentaient un même tableau clinique fait de céphalées, fièvre et vomissements. Selon la communauté, ces décès seraient liés à une histoire appelée « Tumu », en rapport avec des fétiches qui auraient été brûlés par un pasteur, entraînant, selon les croyances locales, sa mort ainsi que celle de son épouse.*\n\n*La situation est actuellement en cours d'investigation par l'équipe.*\n\n*Sitrep Maladie à Virus Ebola / RDC / N°002/ 2026* — **Page 2**\n\n---\n\n## Page 3\n\n### Répartition spaciale des Zones de Santé touchées\n\n*Figure 1 : Cartographie des Zones de santé touchées en termes de cas suspects (+confirmés)*\n\n[Map of Ituri province showing affected health zones: Rwampara, Bunia, and Mongbwalu highlighted in red]\n\n---\n\n### Cumul des cas en date du 15 mai 2026\n\n**Tableau 1. Répartition des alertes reçues, validées et investiguées par Zone de santé**\n\n| Indicateurs                          | ZS Mongbwalu | ZS Rwampara | ZS Bunia | Total |\n|--------------------------------------|--------------|-------------|----------|-------|\n| Alertes reçues                       | 256          | 72          | 12       | 340   |\n| Cas investigués                      | 256          | 72          | 8        | 336   |\n| Cas suspects prélevés                | 7            | 25          | 0        | 32    |\n| Cas Confirmés                        | 0            | 13          | 0        | 13    |\n| Cas Probables                        | 57           | 27          | 3        | 87    |\n| Cas Suspects en isolement            | 3            | 5           | 4        | 12    |\n| Cas suspects en cours de prélèvement | 0            | 5           | 6        | 11    |\n\n---\n\n### ACTIVITES REALISEES\n\n### III. COORDINATION\n\n- Tenue des réunions de CGUS auprès de Bourgmestre de la zone de Mongbwalu ;\n- Tenue de la réunion bipartite : OMS et Gouvernement provincial ;\n- Tenue de 2 réunions COUSP Provincial ;\n- Elaboration en cours du plan d'action de l'Incident (PAI) ;\n- Tenue de la réunion du COUSP National autour de la situation d'urgence\n\n*Sitrep Maladie à Virus Ebola / RDC / N°002/ 2026* — **Page 3**\n\n---\n\n## Page 4\n\n### IV. SURVEILLANCE EPIDEMIOLOGIQUE\n\n- Notification officielle de l'alerte le 8 mai 2026 suite à des rumeurs de décès groupés.\n- Mise en jour de la situation épidémiologique et des listes linéaires des cas suspects et probables\n- Prélèvements des échantillons, analyses et expédition des échantillons à l'INRB\n\n---\n\n### V. LABORATOIRE\n\n- Treize premiers échantillons prélevés dont 2 analysés au TDR avec le résultat négatif (Dengue, MPOX, Paludisme, Yesinia pestis, COVID-19, Rotavirus et Cholera),\n\n---\n\n### VII. PREVENTION ET CONTRÔLE DE L'INFECTION (PCI/WASH)\n\n- Evaluation PCI, CS Abelkozo (score 7%), HGR Mongbwalu (score 34%).\n\n---\n\n### IX. COMMUNICATION SUR LES RISQUES ET ENGAGEMENT COMMUNAUTAIRE\n\n- Sensibilisation initiale des leaders communautaires et leaders religieux pour contrer les rumeurs de \"maladie mystique\".\n- Elaboration du draft de message du Gouverneur militaire relatif à la prévention de la maladie à Virus Ebola qui fait morts d'hommes dans cette province,\n- Élaboration des messages éducatifs, selon les cibles, sur la prévention de cette maladie PCI : Poursuite des évaluations des conditions de la mise en œuvre de la Prévention et contrôle des infections dans les Etablissements des soins, Logistique :\n- Réunion préparatoire des états des besoins logistiques pour l'ensemble des piliers.\n\n---\n\n### X. SECURITE\n\n- Monitorage sécuritaire quotidien.\n\n---\n\n### XII. DEFIS ET GAPS\n\n- Manque d'isolement conforme, élaboration du PAI et désignation de SGI ;\n- Manque d'intrant PCI, kits prélèvement ;\n- Besoin de CREC pour gérer les rumeurs communautaires, ;\n- Personnel non formé en PCI, prélèvement, transport et conservation d'échantillon, surveillance, PEC de maladie à potentiel épidémique ;\n- Manque de triage à HGR Mongbwalu et CS ;\n- Réalisation EDS complète ;\n- Besoin urgent d'urgent de CTE normé dans les 3 ZS en épidémies.\n\n*Sitrep Maladie à Virus Ebola / RDC / N° 002/ 2026* — **Page 4**\n\n---\n\n## Page 5\n\n### XIII. PERSPECTIVES\n\n- *Organiser et standardiser les Enterrements Dignes et Sécurisés (EDS) pour neutraliser la source de contamination majeure que représentent les corps.*\n- *Kit PCI, de prélèvement et de transports des échantillons,*\n- *Formation des prestataires sur la surveillance épidémiologique, PCI, CREC*\n- *Renforcer la surveillance à base communautaire,*\n- *Multiplication des outils de la surveillance épidémiologique, communication, …*\n- *Identification, réhabilitation et/ou réaménagement des structures des prises en charge ;*\n- *Renforcement de la surveillance épidémiologique au niveau des points d'entrés,*\n- *Déclencher une coordination transfrontalière immédiate avec l'Ouganda et le SudSoudan pour surveiller les mouvements de population aux frontières.*\n- *L'activation du Centre des opérations d'Urgences de Santé*\n\n---\n\n*Point de presse du Ministre de la santé* | *Réunion de la Coordination Nationale, COUSP-RDC*\n\n*Réunion de la Coordination Provinciale, DPS Ituri*\n\n*Sitrep Maladie à Virus Ebola / RDC / N° 002/ 2026* — **Page 5**\n\n---\n\n## Page 6\n\n**POUR TOUTE INFORMATION SUPPLÉMENTAIRE, VEUILLEZ CONTACTER**\n\n**Pour l'Institut National de la Santé Publique (INSP) de la RDC**\n\nLe Directeur Général de l'INSP\nDr MWAMBA KAZADI Dieudonné\nTel. : +243 816 040 145\nE-mail : dieudonnemwambakazadi@gmail.com\n\nLe Coordonnateur COU-SP\nProf NGANDU Christian\nTél. : +243998091915\nE-mail : nganduchristian@ymail.com\n\nL'Incident Manager SGI MVE Epi17\nE-mail :\n\n**Pour l'Organisation Mondiale de la Santé (OMS/RDC)**\n\nLe Représentant ai de l'OMS en RDC\nDr\nE-mail :     @who.int\n\nIncident Manager de l'OMS dans la réponse MVE\nE-mail:     @who.int\n\nLe Team Lead Cluster EPR de l'OMS en RDC\nDr Mouctar Diallo\nE-mail : dialloam@who.int\n\n[Partner logos: Banque Mondiale, UE, USAID, World Health Organization, UNICEF, CDC, Gavi, AfricaCDC, PATH, NRB, Institute of Tropical Medicine, Programme Alimentaire Mondial, REDISSE, GULMEN, Médecins Sans Frontières, fhi360, Croix-Rouge, CICR, Save the Children, jhpiego, Ambassade de Grande-Bretagne Kinshasa, Organisation des Nations Unies pour l'alimentation et l'agriculture, MEDAIR, Action Contre la Faim, ADECG, Breakthrough Action, VillageReach, UCLA, Fielding School of Public Health, MBOTE Study, L'Eglise de Jésus-Christ des Saints des Derniers Jours, OXFAM, OIM, ONU Migration, CCISA, Women of Faith, USDA, AFENET, UG-PDSS, ALIMA, PANTHER, INROB]\n\n*Sitrep Maladie à Virus Ebola / RDC / N° 002/ 2026* — **Page 6**"
+}
