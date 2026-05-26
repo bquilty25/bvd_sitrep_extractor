@@ -469,9 +469,8 @@ national_for_comp <- df |>
   filter(
     count_type == "Cumules", !is_agg, zone %in% ZONE_LEVELS,
     sitrep_source %in% c(
-      "MVE_SitRep_001_national_2026-05-14",
-      "MVE_SitRep_002_national_2026-05-15",
-      "MVE_SitRep_004_national_2026-05-18"
+      "SitRep_MVE_001-2026",
+      "SitRep_MVE_004-2026"
     )
   ) |>
   group_by(date, zone) |>
