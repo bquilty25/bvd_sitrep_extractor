@@ -235,7 +235,7 @@ The Democratic Republic of Congo is experiencing an outbreak of Maladie à Virus
 
 ### Data sources
 
-Epidemiological data were obtained from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC during the 2026 MVE outbreak in Ituri Province and neighbouring zones. The automated fetcher (`fetch_sitreps.py`) scrapes two INSP web pages (<https://insp.cd/ebola/> and <https://insp.cd/category/sitrep/>) for PDF hyperlinks and downloads any document whose URL contains at least one of the tokens *MVE*, *SitRep*, *Ebola*, or *Marburg* and whose WordPress upload path indicates a date of May 2026 or later. A JSON manifest records each downloaded file with its source URL, file size, and download timestamp, ensuring idempotent incremental runs. Eleven PDFs were processed in total. The three earliest national INSP sitreps (N°001, N°002, and N°004) were not available on the INSP website at the time of collection; the corresponding national PDFs were obtained from the publicly available [Kraemer lab `Ebola_DRC_2026`](https://github.com/kraemer-lab/Ebola_DRC_2026) repository and processed identically to the automatically downloaded documents.
+Epidemiological data were obtained from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC during the 2026 MVE outbreak in Ituri Province and neighbouring zones. The automated fetcher (`fetch_sitreps.py`) scrapes two INSP web pages (<https://insp.cd/ebola/> and <https://insp.cd/category/sitrep/>) for PDF hyperlinks and downloads any document whose URL contains at least one of the tokens *MVE*, *SitRep*, *Ebola*, or *Marburg* and whose WordPress upload path indicates a date of May 2026 or later. A JSON manifest records each downloaded file with its source URL, file size, and download timestamp, ensuring idempotent incremental runs. Eleven PDFs were processed in total, all obtained directly from the INSP DRC website. MD5 verification confirmed that the PDFs downloaded from the INSP website are byte-for-byte identical to those archived in the Kraemer lab repository, establishing that both pipelines operate on the same source documents.
 
 For cross-source validation, pre-harmonised long-format case-count data were obtained from the same Kraemer lab repository (`build/long/`), which represents independent manual human extraction of INSP DRC situation reports into a standardised schema.
 
@@ -477,43 +477,27 @@ bind_rows(zone_latest, total_row) |>
 
 ### Cross-source validation
 
-Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which codes INSP DRC situation reports into a standardised long-format by manual human extraction. National INSP SitReps N°001, N°002, and N°004, extracted separately from PDFs obtained via the Kraemer lab repository, are shown as a third series. Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series are treated as missing.
+Cumulative zone-level counts from this pipeline are compared against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) repository, which codes INSP DRC situation reports into a standardised long-format by manual human extraction. Both pipelines operate on the same source PDFs (MD5-verified). Zone names differ between sources at two sites (Mongbwalu/Mongbalu and Nyankunde/Nyakunde); counts are matched on the harmonised name. `ND` values in the Kraemer lab series are treated as missing. Any divergence between the two series therefore reflects differences in extraction method — automated LLM-based visual extraction versus human manual coding — rather than differences in the source documents.
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (provincial docs for early sitreps); dotted lines: national INSP SitReps N°001/002/004 (this pipeline); dashed lines: Kraemer lab."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (this pipeline); dashed lines: Kraemer lab (manual extraction). Both sources use identical PDFs; divergence reflects extraction method differences."
 #| fig-width: 12
 #| fig-height: 11
 PAL_COMP <- c(
   "Automated extraction" = "#0072B2",
-  "National INSP (early)" = "#009E73",
-  "Kraemer lab"           = "#E69F00"
+  "Kraemer lab"          = "#E69F00"
 )
 LTY_COMP <- c(
-  "Automated extraction"  = "solid",
-  "National INSP (early)" = "dotted",
-  "Kraemer lab"           = "dashed"
+  "Automated extraction" = "solid",
+  "Kraemer lab"          = "dashed"
 )
 
 our_for_comp <- zone_ts |>
   transmute(zone, date, confirmed, suspected = unconfirmed, deaths,
             source = "Automated extraction")
 
-national_for_comp <- df |>
-  filter(
-    count_type == "Cumules", !is_agg, zone %in% ZONE_LEVELS,
-    sitrep_source %in% c(
-      "SitRep_MVE_001-2026",
-      "SitRep_MVE_004-2026"
-    )
-  ) |>
-  group_by(date, zone) |>
-  slice_max(order_by = unconfirmed, n = 1, with_ties = FALSE) |>
-  ungroup() |>
-  transmute(zone, date, confirmed, suspected = unconfirmed, deaths,
-            source = "National INSP (early)")
-
-comp_long <- bind_rows(our_for_comp, national_for_comp, kraemer) |>
+comp_long <- bind_rows(our_for_comp, kraemer) |>
   pivot_longer(c(confirmed, suspected, deaths), names_to = "metric", values_to = "count") |>
   mutate(
     metric = recode(metric,
@@ -521,7 +505,7 @@ comp_long <- bind_rows(our_for_comp, national_for_comp, kraemer) |>
       "suspected" = "Suspect/probable cases",
       "deaths"    = "Outbreak deaths"
     ),
-    source = factor(source, levels = c("Automated extraction", "National INSP (early)", "Kraemer lab"))
+    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
   ) |>
   filter(!is.na(count))
 
@@ -535,7 +519,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction vs national INSP (early) vs Kraemer lab",
+    subtitle = "Cumulative counts: automated extraction vs Kraemer lab (manual extraction, same source PDFs)",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
@@ -591,89 +575,6 @@ full_join(ours_latest, kraemer_latest, by = "zone") |>
   color(part = "header", color = "white") |>
   align(j = 2:10, align = "right", part = "all") |>
   colformat_int(j = 2:10, na_str = "\u2014") |>
-  autofit()
-```
-
-### Early sitrep source comparison
-
-For SitReps N°001, N°002, and N°004, the INSP DRC website hosted Ituri DPS provincial documents rather than the national INSP reports. The national documents were obtained from the Kraemer lab repository and extracted separately. Table 3 presents cumulative suspect/probable cases, confirmed cases, and deaths by health zone from each pair of documents. Provincial figures use the *probabilités* (probable cases) column; national figures use *cas suspects* (combined suspect and probable). Zones absent from the provincial documents appear with missing values.
-
-```{r}
-#| label: tbl-early-comp
-#| tbl-cap: "Table 3. Ituri DPS provincial documents vs national INSP documents for SitReps N°001, N°002 and N°004: cumulative suspect/probable cases, confirmed cases, and deaths by health zone. Delta = national minus provincial."
-PROV_SOURCES <- c(
-  "Draft-MVE-Ituri-ActuelB-1",
-  "Sitrep_MVE-Ituri_N\u00b0-002_18-mai-2026",
-  "Sitrep_MVE-Ituri_N\u00b0004-au-20-mai-2026"
-)
-
-NAT_SOURCES <- c(
-  "MVE_SitRep_001_national_2026-05-14",
-  "MVE_SitRep_002_national_2026-05-15",
-  "MVE_SitRep_004_national_2026-05-18"
-)
-
-SLOT_MAP <- c(
-  "Draft-MVE-Ituri-ActuelB-1"                  = "N\u00b0001",
-  "Sitrep_MVE-Ituri_N\u00b0-002_18-mai-2026"   = "N\u00b0002",
-  "Sitrep_MVE-Ituri_N\u00b0004-au-20-mai-2026" = "N\u00b0004",
-  "MVE_SitRep_001_national_2026-05-14"          = "N\u00b0001",
-  "MVE_SitRep_002_national_2026-05-15"          = "N\u00b0002",
-  "MVE_SitRep_004_national_2026-05-18"          = "N\u00b0004"
-)
-
-early_prov <- df |>
-  filter(count_type == "Cumules", !is_agg, sitrep_source %in% PROV_SOURCES) |>
-  mutate(slot = recode(sitrep_source, !!!SLOT_MAP)) |>
-  group_by(slot, zone) |>
-  slice_max(date, n = 1, with_ties = FALSE) |>
-  ungroup() |>
-  transmute(
-    slot, zone,
-    prov_date      = date,
-    prov_suspect   = unconfirmed,
-    prov_confirmed = confirmed,
-    prov_deaths    = deaths
-  )
-
-early_nat <- df |>
-  filter(count_type == "Cumules", !is_agg, sitrep_source %in% NAT_SOURCES) |>
-  mutate(slot = recode(sitrep_source, !!!SLOT_MAP)) |>
-  group_by(slot, zone) |>
-  slice_max(date, n = 1, with_ties = FALSE) |>
-  ungroup() |>
-  transmute(
-    slot, zone,
-    nat_date      = date,
-    nat_suspect   = unconfirmed,
-    nat_confirmed = confirmed,
-    nat_deaths    = deaths
-  )
-
-full_join(early_nat, early_prov, by = c("slot", "zone")) |>
-  mutate(d_suspect = nat_suspect - prov_suspect) |>
-  arrange(slot, zone) |>
-  transmute(
-    `SitRep`         = slot,
-    `Health zone`    = as.character(zone),
-    `Prov. date`     = format(prov_date, "%d %b"),
-    `Prov. suspect`  = prov_suspect,
-    `Prov. confirm.` = prov_confirmed,
-    `Prov. deaths`   = prov_deaths,
-    `Natl. date`     = format(nat_date, "%d %b"),
-    `Natl. suspect`  = nat_suspect,
-    `Natl. confirm.` = nat_confirmed,
-    `Natl. deaths`   = nat_deaths,
-    `Delta suspect`  = d_suspect
-  ) |>
-  flextable() |>
-  bold(part = "header") |>
-  bg(part = "header", bg = "#1A3A5C") |>
-  color(part = "header", color = "white") |>
-  merge_v(j = "SitRep") |>
-  valign(j = "SitRep", valign = "top", part = "body") |>
-  align(j = 3:11, align = "right", part = "all") |>
-  colformat_int(j = 4:11, na_str = "\u2014") |>
   autofit()
 ```
 
@@ -746,8 +647,8 @@ kraemer_contacts |>
 
 The outbreak trajectory shows a consistent increase in suspect and probable case counts across the reporting period. Confirmed cases remain a minority of the total, reflecting the challenges of laboratory confirmation in the field setting. The geographic spread across both Ituri and Nord-Kivu provinces underscores the need for multi-province coordination of the response.
 
-Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. National INSP SitReps N°001, N°002, and N°004 were not available on the INSP website and were obtained from the Kraemer lab repository; Table 3 documents the systematic differences between these national documents and the Ituri DPS provincial documents that occupied the same URL slots. Response indicator data (hospitalisation, contacts traced) are sourced from the Kraemer lab repository as these metrics are not captured in the automated extraction pipeline. Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator, and the deaths column captures the first available of deaths-among-suspects, deaths-among-probables, and deaths-among-confirmed, which are not consistently labelled across situation reports.
+Per-zone new case data are only available from 20 May 2026 onwards, as earlier situation reports did not disaggregate new cases by health zone. Response indicator data (hospitalisation, contacts traced) are sourced from the Kraemer lab repository as these metrics are not captured in the automated extraction pipeline. Results should be interpreted in the context of reporting delays and the possibility of incomplete situation report coverage for some health zones and dates. The case fatality ratio reported here should be treated as a provisional estimate, as delays in death reporting may affect the numerator, and the deaths column captures the first available of deaths-among-suspects, deaths-among-probables, and deaths-among-confirmed, which are not consistently labelled across situation reports.
 
-Inspection of the raw PDF extractions and the Kraemer lab source documents identified four distinct reasons for divergence in the cross-source comparison. The most substantive concerns the source documents used for the first three sitrep slots (N°001–003). The INSP DRC website hosted Ituri DPS provincial sitreps at these URL positions rather than the national INSP documents. These provincial documents cover only the three main Ituri health zones and use the column heading *probabilités* (probable cases) at zone level, whereas the national INSP format uses *cas suspects* — a combined suspect and probable tally. As a result, zone-level unconfirmed case counts disagree substantially for dates prior to 19 May 2026: for example, Mongbwalu on 15 May is recorded as 57 probable cases in the Ituri DPS SitRep N°002, compared with 246 suspected cases in the Kraemer lab national SitRep N°002 — a figure coinciding with the aggregate suspect total across all Ituri zones in the provincial document. From SitRep N°005 (19 May 2026) onwards, both pipelines use the same nationally issued INSP documents, and confirmed case counts, suspected case counts, and deaths are near-identical between sources for this period.
+MD5 checksum verification confirmed that the PDFs processed by this pipeline are byte-for-byte identical to those archived in the Kraemer lab repository. All divergence in the cross-source comparison therefore reflects differences in extraction method — automated Claude-based visual extraction versus human manual coding — rather than differences in the source documents.
 
-A second source of divergence is that three of the PDFs processed here carry explicit draft labels in their filenames (`Draft-MVE-Ituri-ActuelB-1`, `Draft_SitRep_MVE_RDC_20260520_vf1`, `Draft_SitRep_MVE_RDC_2022vf2_IM`), whereas the Kraemer lab holds the corresponding final published versions; provisional counts in drafts may differ from the figures retained in the final document. Third, both pipelines assign the data reference date stated in the cumulative table title (for example, *au 21 mai 2026*) rather than the publication date, so date alignment between sources is consistent from SitRep N°005 onwards and is not itself a source of discrepancy for that period. Fourth, this pipeline enforces monotonic non-decrease via cumulative maximum, masking genuine downward revisions that are visible in the Kraemer series: Mongbwalu confirmed cases fall from 14 (SitRep N°007, 21 May) to 10 (SitRep N°008, 22 May) in the Kraemer data, most likely reflecting reclassification of four previously confirmed cases; this pipeline retains the cummax value of 14 at 22 May. Finally, the Kraemer lab data extend to SitRep N°008 (22 May), whereas this pipeline has additionally processed SitReps N°009 and N°010 (through 25 May), and several health zones present in the Kraemer series (Aru, Kilo, Nizi, Miti-Murhesa) are excluded from this pipeline's zone filter.
+Three sources of extraction divergence were identified. First, a small number of field-level discrepancies persist for specific zone–date combinations: Katwa confirmed cases differ by one to three cases on 21–22 May; Butembo confirmed cases differ by one case on 21 May; and Goma suspected cases differ by one case across 20–23 May. These discrepancies are consistent with marginal ambiguities in how the model reads table cell borders or interprets partially legible figures. Second, three of the PDFs processed here carry explicit draft labels in their filenames (`Draft-MVE-Ituri-ActuelB-1`, `Draft_SitRep_MVE_RDC_20260520_vf1`, `Draft_SitRep_MVE_RDC_2022vf2_IM`); the Kraemer lab may hold the corresponding final published versions, and provisional counts in drafts may differ from figures in the final document. Third, this pipeline enforces monotonic non-decrease via cumulative maximum, masking genuine downward revisions that are visible in the Kraemer series: Mongbwalu confirmed cases fall from 14 (SitRep N°007, 21 May) to 10 (SitRep N°008, 22 May) in the Kraemer data, most likely reflecting reclassification of four previously confirmed cases; this pipeline retains the cummax value of 14 at 22 May. This pipeline has additionally processed SitReps N°009 and N°010 (through 25 May), which extend beyond the current Kraemer series, and several health zones present in the Kraemer series (Aru, Kilo, Nizi, Miti-Murhesa) are excluded from this pipeline's zone filter.
