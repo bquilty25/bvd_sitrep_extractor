@@ -3,6 +3,7 @@ title: "Maladie à Virus Ebola — Situation Report"
 subtitle: "Democratic Republic of Congo"
 date: today
 date-format: "DD MMMM YYYY"
+output-dir: "../outputs"
 format:
   html:
     toc: true
@@ -44,6 +45,7 @@ df <- df_raw |>
     probable    = as.numeric(cases_probable),
     confirmed   = as.numeric(cases_confirmed),
     deaths      = coalesce(as.numeric(deaths_suspected), as.numeric(deaths_probable), as.numeric(deaths_confirmed)),
+    deaths_susp = as.numeric(deaths_suspected),
     is_agg      = (is_aggregate == "TRUE"),
     # Only sum to zero when at least one component is present; otherwise NA
     # (avoids a false zero for zones that simply weren't reported in that sitrep)
@@ -110,13 +112,16 @@ zone_ts <- df |>
     # Flag raw downward revisions before enforcing monotonicity
     confirmed_raw   = confirmed,
     unconfirmed_raw = unconfirmed,
+    deaths_raw      = deaths,
+    deaths_susp_raw = deaths_susp,
     rev_confirmed   = confirmed   < lag(cummax(replace_na(confirmed,   0L)), default = 0L),
     rev_unconfirmed = unconfirmed < lag(cummax(replace_na(unconfirmed, 0L)), default = 0L),
     # Apply cummax only over observed values; leave NAs before the first
     # real observation so geom_line breaks rather than drawing from zero
     unconfirmed = {x <- unconfirmed; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
     confirmed   = {x <- confirmed;   i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
-    deaths      = {x <- deaths;      i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x}
+    deaths      = {x <- deaths;      i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
+    deaths_susp = {x <- deaths_susp; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x}
   ) |>
   ungroup()
 
@@ -197,18 +202,27 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases.csv") |>
   ) |>
   full_join(
     read_kraemer_long("insp_sitrep__cumulative_suspected_deaths.csv") |>
-      rename(deaths = cumulative_suspected_deaths),
+      rename(deaths_susp = cumulative_suspected_deaths),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__cumulative_confirmed_deaths.csv") |>
+      rename(deaths_conf = cumulative_confirmed_deaths),
     by = c("nom", "date")
   ) |>
   mutate(
-    zone      = recode(nom, !!!KRAEMER_NAME_MAP),
-    date      = as.Date(date),
-    confirmed = suppressWarnings(as.numeric(confirmed)),
-    suspected = suppressWarnings(as.numeric(suspected)),
-    deaths    = suppressWarnings(as.numeric(deaths)),
-    source    = "Kraemer lab"
+    zone       = recode(nom, !!!KRAEMER_NAME_MAP),
+    date       = as.Date(date),
+    confirmed  = suppressWarnings(as.numeric(confirmed)),
+    suspected  = suppressWarnings(as.numeric(suspected)),
+    deaths_susp = suppressWarnings(as.numeric(deaths_susp)),
+    deaths_conf = suppressWarnings(as.numeric(deaths_conf)),
+    # Total deaths = suspected + confirmed (mirrors our coalesce logic)
+    deaths     = coalesce(deaths_susp, 0) + coalesce(deaths_conf, 0),
+    deaths     = if_else(is.na(deaths_susp) & is.na(deaths_conf), NA_real_, deaths),
+    source     = "Kraemer lab"
   ) |>
-  select(zone, date, confirmed, suspected, deaths, source) |>
+  select(zone, date, confirmed, suspected, deaths_susp, deaths_conf, deaths, source) |>
   filter(zone %in% ZONE_LEVELS)
 
 kraemer_hosp <- read_kraemer_long("insp_sitrep__hospitalised.csv") |>
@@ -225,6 +239,65 @@ kraemer_contacts <- read_kraemer_long("insp_sitrep__cumulative_contacts_traced.c
     contacts_traced = suppressWarnings(as.numeric(cumulative_contacts_traced))
   ) |>
   filter(!is.na(contacts_traced))
+
+# Response indicators (hospitalisations by zone)
+kraemer_response <- read_kraemer_long("insp_sitrep__hospitalised.csv") |>
+  full_join(read_kraemer_long("insp_sitrep__in_bed_previous_day.csv"), by = c("nom", "date")) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__new_hosp_admissions.csv") |>
+      rename(total_admissions = new_all_admissions),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__new_hosp_detainees.csv") |>
+      rename(new_admissions_ppl = new_hosp_detainees),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__new_hosp_other.csv") |>
+      rename(new_admissions_other = new_other),
+    by = c("nom", "date")
+  ) |>
+  mutate(
+    zone   = recode(nom, !!!KRAEMER_NAME_MAP),
+    date   = as.Date(date),
+    across(c(hospitalised, in_bed_previous_day, total_admissions,
+             new_admissions_ppl, new_admissions_other),
+           ~suppressWarnings(as.numeric(.x))),
+    source = "Kraemer lab"
+  ) |>
+  filter(zone %in% ZONE_LEVELS)
+
+# POE (checkpoint-level in Kraemer; summed to daily aggregate for comparison)
+kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed.csv") |>
+  rename(total_passed = total_poe_passed) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__total_poe_screened.csv") |>
+      rename(total_screened = total_poe_screened),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__total_poe_hand_washing.csv") |>
+      rename(total_handwashing = total_poe_hand_washing),
+    by = c("nom", "date")
+  ) |>
+  full_join(
+    read_kraemer_long("insp_sitrep__total_poe_sanitised.csv") |>
+      rename(total_sensitised = total_poe_sanitised),
+    by = c("nom", "date")
+  ) |>
+  mutate(
+    date = as.Date(date),
+    across(c(total_passed, total_screened, total_handwashing, total_sensitised),
+           ~suppressWarnings(as.numeric(.x)))
+  ) |>
+  group_by(date) |>
+  summarise(
+    across(c(total_passed, total_screened, total_handwashing, total_sensitised),
+           ~sum(.x, na.rm = TRUE)),
+    .groups = "drop"
+  ) |>
+  mutate(source = "Kraemer lab")
 ```
 
 ## Introduction
@@ -235,41 +308,19 @@ The Democratic Republic of Congo is experiencing an outbreak of Maladie à Virus
 
 ### Data sources
 
-Epidemiological data were obtained from PDF situation reports published by the Institut National de Santé Publique (INSP) DRC during the 2026 MVE outbreak in Ituri Province and neighbouring zones. The automated fetcher (`fetch_sitreps.py`) scrapes two INSP web pages (<https://insp.cd/ebola/> and <https://insp.cd/category/sitrep/>) for PDF hyperlinks and downloads any document whose URL contains at least one of the tokens *MVE*, *SitRep*, *Ebola*, or *Marburg* and whose WordPress upload path indicates a date of May 2026 or later. A JSON manifest records each downloaded file with its source URL, file size, and download timestamp, ensuring idempotent incremental runs. Eleven PDFs were processed in total, all obtained directly from the INSP DRC website. MD5 verification confirmed that the PDFs downloaded from the INSP website are byte-for-byte identical to those archived in the Kraemer lab repository, establishing that both pipelines operate on the same source documents.
+Epidemiological data were obtained from eleven PDF situation reports published by the Institut National de Santé Publique (INSP) DRC during the 2026 MVE outbreak in Ituri and Nord-Kivu provinces. PDFs were downloaded automatically from the INSP DRC website (<https://insp.cd/ebola/>), with a manifest ensuring idempotent incremental updates. MD5 checksums confirmed that the downloaded PDFs are byte-for-byte identical to those archived in the Kraemer lab repository, establishing that both sources operate on the same documents. For cross-source validation, pre-harmonised long-format case-count data were obtained from the Kraemer lab repository, which represents independent manual extraction of the same INSP DRC situation reports.
 
-For cross-source validation, pre-harmonised long-format case-count data were obtained from the same Kraemer lab repository (`build/long/`), which represents independent manual human extraction of INSP DRC situation reports into a standardised schema.
+### Automated PDF extraction
 
-### Automated PDF extraction pipeline
-
-Each PDF was passed to the Anthropic Claude claude-sonnet-4-6 large language model via the Messages API as a base64-encoded document, enabling visual (pixel-level) reading of the PDF rather than relying on text-layer extraction. A temperature of 0 was used throughout to maximise response reproducibility.
-
-The extraction pipeline makes two sequential API calls per document. The first call uses a focused structured-extraction prompt (up to 8,192 output tokens) and returns a single JSON object with two keys: `new_cases` (the table of incident cases for the most recent reporting day, *nouvelles données* or equivalent) and `cumulative` (the cumulative summary table, labelled *Tableau 3* or *données cumulatives* in most documents). Each table object carries table-level metadata — the exact table title string, a reporting date, a period end date, a period start date, and any footnote text — as well as an array of row objects. Every row is normalised to eight fields: `province`, `zone_de_sante`, `cas_suspects`, `cas_probables`, `cas_confirmes`, `deces_suspects`, `deces_probables`, and `deces_confirmes`. Empty strings are used for fields absent from the source; genuine zero counts are preserved as `"0"`. Where a numeric field is absent from the table itself but is explicitly and unambiguously stated in the document body text or *Points Saillants* section for the same reporting unit and the same reporting period, the prompt instructs the model to populate that field from the narrative; values are never inferred, estimated, or calculated. The prompt further instructs the model to transpose any pivoted table in which health zones appear as column headers rather than row labels. The second API call (up to 48,000 output tokens) requests a verbatim full-text transcription of the document and is stored in `raw_extraction.json` alongside the structured data, providing a complete audit trail for each PDF. If the second call fails, the pipeline continues without the transcription rather than aborting.
-
-If the Claude response is not valid JSON, the `json_repair` library is applied before parsing.
-
-### Post-extraction validation
-
-Three successive validation checks guard against spurious data being introduced into the output. First, a title-based check examines the `table_title` field of the cumulative table object; if the title contains any of a defined set of French alert-investigation keywords (*alertes*, *reçues*, *validées*, *investiguées*, *enquêtées*, *notifiées*, *investigation*, *suivi des alertes*) and the extracted rows contain no case-count data, the cumulative rows are discarded and a warning is emitted. This check rejects the *Tableau de suivi des alertes* format used in some early Ituri DPS provincial documents. Second, a row-level heuristic discards the cumulative table if, in any extracted row, the probable-case count exceeds three times the suspect-case count — a pattern consistent with an alert-investigation table in which the *probable* column records investigated alerts rather than probable cases. Third, if the cumulative table has been discarded by either check and the new-cases table has no identifiable table title, new-cases rows are also suppressed on the grounds that they were likely synthesised by the model from body text rather than read from a dedicated table.
-
-### Date resolution
-
-The end date assigned to cumulative rows follows a defined priority cascade: (1) a date parsed from the cumulative table title using a French-language date pattern (*DD mois YYYY*); (2) the `reporting_date` field returned by the model; (3) the `period_end_date` field; (4) a date parsed from the table footnotes; (5) a date parsed from the PDF filename, which is attempted first as a compact numeric pattern (*YYYYMMDD*) and then as a French text date (*DD-mois-YYYY*). For new-cases rows, the filename date is used preferentially as the end date, falling back to the model-reported fields. An empty string is assigned only if no date is recoverable by any method.
+Each PDF was passed to the Anthropic Claude claude-sonnet-4-6 large language model via the Messages API as a base64-encoded document, enabling pixel-level reading without reliance on the text layer. A temperature of 0 was used to maximise reproducibility. The model returned a structured JSON object containing four tables. The new-cases and cumulative case-count tables each provide rows normalised to province, health zone, and counts of suspected, probable, and confirmed cases and deaths; validation checks discarded tables identified as alert-investigation summaries rather than case counts. Where available (SitReps 006 onwards), the patient movement table (*Mouvement des malades*, Tableau VI) was also extracted, providing zone-level counts of patients in bed at the start of the day, new admissions, total isolated, and cumulative admissions. In addition, the Points d'Entrée/Points de Contrôle (PoE/PoC) summary table was extracted, recording aggregate counts of travellers screened, contacts listed, and alerts raised per reporting period. A second API call produced a verbatim full-text transcription stored as an audit trail.
 
 ### Data harmonisation
 
-Zone names are normalised to a canonical spelling prior to analysis: *Mungbwalu* is corrected to *Mongbwalu*. Rows are classified as aggregate (province- or outbreak-level summaries) if the health zone field contains the word *total* or *sous-total*, is empty while a province name is present, or contains multiple zone names separated by commas or parenthetical zone counts (*e.g.* Mongbwalu, Rwampara et Bunia (3 ZS)). Sentinel non-data values (*ND*, *N/A*, dashes, and em-dashes) are treated as missing.
-
-Suspect and probable case counts are combined into a single unconfirmed category, because individual situation reports differ in which of the two fields they populate: earlier Ituri DPS provincial documents use the *probabilités* column for zone-level counts, whereas national INSP documents use *cas suspects*. The unconfirmed count for a row is the sum of suspects and probables, with each coerced to zero when absent but the other is present; when both are absent the unconfirmed value is left as missing rather than set to zero, to prevent false zero observations for zones not reported in a given sitrep. Deaths are derived as the first non-missing value from `deaths_suspected`, `deaths_probable`, and `deaths_confirmed`, in that order of priority. The three-way coalesce is necessary because early Ituri DPS provincial documents record deaths exclusively in the `deces_confirmes` column, while later national INSP documents use `deces_suspects`; the column labelling is not consistent across situation reports.
-
-To enforce temporal consistency, cumulative counts are constrained to be monotonically non-decreasing within each health zone using the running cumulative maximum across successive reporting dates. This operation is applied separately to confirmed cases, unconfirmed cases, and deaths. Where multiple source documents provide data for the same health zone and the same reporting date, the row with the highest unconfirmed count is retained.
-
-### Output structure
-
-Per-PDF outputs (new cases table, cumulative table, combined linelist, and raw JSON extraction) are written to a dedicated subfolder under `outputs/sitreps/`. The canonical folder name is derived from the PDF's entry in a manifest file where available, or from the PDF filename stem otherwise. All processed PDFs are appended to a single master linelist (`outputs/master_combined_counts.csv`) sorted chronologically by reporting date. A registry (`outputs/processed.json`) records each processed PDF with its processing timestamp and row count, enabling incremental updates without reprocessing previously analysed documents.
+Zone names were normalised to canonical spellings. Suspect and probable case counts were combined into a single unconfirmed category to accommodate inconsistent column usage across situation reports from different issuing bodies. Cumulative counts were constrained to be monotonically non-decreasing within each health zone, and where multiple documents covered the same zone and date the row with the highest unconfirmed count was retained.
 
 ### Statistical analysis
 
-All statistical analyses and data visualisations were produced in R (version `r R.version$major`.`r R.version$minor`) using the `tidyverse` suite of packages [@tidyverse], with figures produced using `ggplot2` [@ggplot2] and tables formatted with `flextable` [@flextable]. The report was rendered with Quarto. This report and the underlying extraction pipeline were developed with the assistance of GitHub Copilot (Microsoft) and the Claude API (Anthropic, model: claude-sonnet-4-6).
+All analyses and visualisations were produced in R (version `r R.version$major`.`r R.version$minor`) using the `tidyverse` suite [@tidyverse], with figures produced using `ggplot2` [@ggplot2] and tables formatted with `flextable` [@flextable]. The report was rendered with Quarto. The extraction pipeline and this report were developed with the assistance of GitHub Copilot (Microsoft) and the Claude API (Anthropic, model: claude-sonnet-4-6).
 
 ## Results
 
@@ -481,45 +532,74 @@ Cumulative zone-level counts from this pipeline are compared against the [Kraeme
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (this pipeline); dashed lines: Kraemer lab (manual extraction). Both sources use identical PDFs; divergence reflects extraction method differences."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (cummax applied); dotted lines: automated extraction (raw, no cummax); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
 #| fig-width: 12
-#| fig-height: 11
+#| fig-height: 14
 PAL_COMP <- c(
   "Automated extraction" = "#0072B2",
+  "Automated (no cummax)" = "#56B4E9",
   "Kraemer lab"          = "#E69F00"
 )
 LTY_COMP <- c(
   "Automated extraction" = "solid",
+  "Automated (no cummax)" = "dotted",
   "Kraemer lab"          = "dashed"
 )
 
+zone_province_lut <- zone_ts |>
+  distinct(zone, province) |>
+  mutate(zone = as.character(zone))
+
 our_for_comp <- zone_ts |>
-  transmute(zone, date, confirmed, suspected = unconfirmed, deaths,
+  transmute(zone = as.character(zone), province, date,
+            confirmed, suspected = unconfirmed,
+            deaths_susp, deaths,
             source = "Automated extraction")
 
-comp_long <- bind_rows(our_for_comp, kraemer) |>
-  pivot_longer(c(confirmed, suspected, deaths), names_to = "metric", values_to = "count") |>
+our_raw_for_comp <- zone_ts |>
+  transmute(zone = as.character(zone), province, date,
+            confirmed   = confirmed_raw,
+            suspected   = unconfirmed_raw,
+            deaths_susp = deaths_susp_raw,
+            deaths      = deaths_raw,
+            source      = "Automated (no cummax)")
+
+# Kraemer deaths_susp = suspected only; deaths = suspected + confirmed (total)
+kraemer_for_comp <- kraemer |>
+  left_join(zone_province_lut, by = "zone") |>
+  transmute(zone, province, date, confirmed, suspected,
+            deaths_susp, deaths,
+            source)
+
+comp_long <- bind_rows(our_for_comp, our_raw_for_comp, kraemer_for_comp) |>
+  pivot_longer(c(confirmed, suspected, deaths_susp, deaths),
+               names_to = "metric", values_to = "count") |>
   mutate(
     metric = recode(metric,
-      "confirmed" = "Confirmed cases",
-      "suspected" = "Suspect/probable cases",
-      "deaths"    = "Outbreak deaths"
+      "confirmed"   = "Confirmed cases",
+      "suspected"   = "Suspect/probable cases",
+      "deaths_susp" = "Suspected deaths",
+      "deaths"      = "Total deaths (coalesced)"
     ),
-    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+    metric   = factor(metric, levels = c("Confirmed cases", "Suspect/probable cases",
+                                          "Suspected deaths", "Total deaths (coalesced)")),
+    source   = factor(source, levels = c("Automated extraction", "Automated (no cummax)", "Kraemer lab")),
+    province = factor(province, levels = c("Ituri", "Nord-Kivu")),
+    zone     = factor(zone, levels = ZONE_LEVELS)
   ) |>
   filter(!is.na(count))
 
 p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(size = 2.0, na.rm = TRUE) +
-  facet_grid(metric ~ zone, scales = "free_y") +
+  facet_nested(metric ~ province + zone, scales = "free_y") +
   scale_colour_manual(values = PAL_COMP) +
   scale_linetype_manual(values = LTY_COMP) +
   scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction vs Kraemer lab (manual extraction, same source PDFs)",
+    subtitle = "Cumulative counts: automated extraction (with and without cummax) vs Kraemer lab (manual extraction, same source PDFs)",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
@@ -529,7 +609,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
     panel.border    = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
     panel.spacing   = unit(0.6, "lines")
   )
-ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 11, dpi = 300)
+ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 14, dpi = 300)
 p
 ```
 
@@ -581,66 +661,213 @@ full_join(ours_latest, kraemer_latest, by = "zone") |>
 ### Response indicators
 
 ```{r}
-#| label: fig-hospitalised
-#| fig-cap: "Patients currently hospitalised by health zone, 20–23 May 2026. Source: Kraemer lab / INSP DRC situation reports."
-#| fig-width: 8
-#| fig-height: 5
-ZONE_COLOURS <- c(
-  "Mongbwalu" = "#56B4E9",
-  "Rwampara"  = "#E69F00",
-  "Bunia"     = "#009E73",
-  "Nyankunde" = "#D55E00",
-  "Aru"       = "#CC79A7"
-)
+#| label: load-response-ours
+resp_ours <- read_csv(
+  here::here("outputs", "master_response_counts.csv"),
+  col_types      = cols(.default = "c"),
+  show_col_types = FALSE
+) |>
+  mutate(
+    date   = dmy(date),
+    zone   = factor(zone, levels = ZONE_LEVELS),
+    across(c(in_bed_previous_day, new_admissions_ppl, new_admissions_other,
+             total_admissions, total_isolated, cumulative_admitted),
+           ~suppressWarnings(as.numeric(.x))),
+    source = "Automated extraction"
+  ) |>
+  filter(!is.na(zone), !zone %in% c("Total"))
 
-kraemer_hosp |>
-  filter(!is.na(hospitalised)) |>
-  mutate(zone = factor(zone, levels = names(ZONE_COLOURS))) |>
-  ggplot(aes(x = date, y = hospitalised, colour = zone, group = zone)) +
-  geom_line(linewidth = 1.1, na.rm = TRUE) +
-  geom_point(size = 2.8, na.rm = TRUE) +
-  scale_colour_manual(values = ZONE_COLOURS, na.translate = FALSE) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "1 day") +
+poe_ours <- read_csv(
+  here::here("outputs", "master_poe_counts.csv"),
+  col_types      = cols(.default = "c"),
+  show_col_types = FALSE
+) |>
+  mutate(
+    date = dmy(date),
+    across(c(total_passed, total_screened, total_handwashing, total_sensitised),
+           ~suppressWarnings(as.numeric(.x))),
+    source = "Automated extraction"
+  ) |>
+  select(date, total_passed, total_screened, total_handwashing, total_sensitised, source)
+```
+
+### Data quality notes — response indicators
+
+Two discrepancies were identified through cross-source validation.
+
+**Rwampara ambiguous table structure (21 May).** SitRep 007 presents Rwampara across three columns (in-bed: 21 | 15 | 35; total isolated: 23 | 19 | 46) whose relationship is not explained in the document — they may represent different isolation units, patient categories, or time sub-periods. The automated extraction summed the first two sub-rows (total isolated = 42); the Kraemer lab summed all three (88). Neither value can be verified against the source document. The 21 May Rwampara data point should be treated with caution in both series.
+
+**New admissions column mapping (20–21 May).** SitReps 005 and 006 used an earlier table format that did not include an explicit "in-bed-previous-day" column. Kraemer's extraction assigned the `new_all_admissions` label to what was in fact the in-bed-previous-day value for those two dates, with the consequence that their new-admissions series for 20–21 May reflects the wrong metric. Values from 22 May onwards, when the table format was standardised, are concordant between the two sources.
+
+```{r}
+#| label: fig-comparison-response
+#| fig-cap: "Cross-source comparison of zone-level response indicators. Solid lines: automated extraction; dashed lines: Kraemer lab. The 21 May Rwampara values are unreliable in both series: the sitrep presents three unexplained sub-columns whose relationship is ambiguous. For 20–21 May, Kraemer's new-admissions values reflect a column-mapping error in the earlier table format."
+#| fig-width: 12
+#| fig-height: 9
+PAL_RESP <- c("Automated extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
+LTY_RESP <- c("Automated extraction" = "solid",   "Kraemer lab" = "dashed")
+
+resp_comp <- bind_rows(
+  resp_ours |>
+    transmute(date, zone,
+              hospitalised        = total_isolated,
+              in_bed_previous_day,
+              total_admissions,
+              source),
+  kraemer_response |>
+    transmute(date, zone = factor(zone, levels = ZONE_LEVELS),
+              hospitalised,
+              in_bed_previous_day,
+              total_admissions,
+              source)
+) |>
+  pivot_longer(c(hospitalised, in_bed_previous_day, total_admissions),
+               names_to = "metric", values_to = "count") |>
+  mutate(
+    metric = recode(metric,
+      "hospitalised"        = "Currently hospitalised",
+      "in_bed_previous_day" = "In bed (prev. day)",
+      "total_admissions"    = "New admissions (total)"
+    ),
+    metric = factor(metric, levels = c("Currently hospitalised",
+                                        "In bed (prev. day)",
+                                        "New admissions (total)")),
+    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+  ) |>
+  filter(!is.na(count), !is.na(zone))
+
+p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = source)) +
+  geom_line(linewidth = 0.9, na.rm = TRUE) +
+  geom_point(size = 2.0, na.rm = TRUE) +
+  facet_nested(metric ~ zone, scales = "free_y") +
+  scale_colour_manual(values = PAL_RESP) +
+  scale_linetype_manual(values = LTY_RESP) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
-                     expand = expansion(mult = c(0, 0.12))) +
+                     expand = expansion(mult = c(0, 0.15))) +
   labs(
-    title    = "MVE DRC \u2014 Hospitalised patients",
-    subtitle = "Patients currently in hospital per reporting day, by health zone",
-    x = NULL, y = "Patients hospitalised", colour = NULL,
-    caption  = "Source: Kraemer lab / INSP DRC situation reports"
+    title    = "MVE DRC \u2014 Response indicators — cross-source validation",
+    subtitle = "Automated extraction vs Kraemer lab (manual, same source PDFs)",
+    x = NULL, y = "Count", colour = NULL, linetype = NULL,
+    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
-  theme_sitrep(base_size = 12)
+  theme_sitrep(base_size = 9) +
+  theme(
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 7),
+    panel.border = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
+    panel.spacing = unit(0.5, "lines")
+  )
+ggsave(here("outputs", "plots", "fig-comparison-response.png"), plot = p,
+       width = 12, height = 9, dpi = 300)
+p
 ```
 
 ```{r}
-#| label: fig-contacts
-#| fig-cap: "Cumulative contacts traced by health zone, 14–23 May 2026. ND values (not reported) are excluded. Source: Kraemer lab / INSP DRC situation reports."
-#| fig-width: 8
-#| fig-height: 5
-CONTACTS_PAL <- c(
-  "Mongbwalu" = "#56B4E9", "Rwampara"  = "#E69F00",
-  "Bunia"     = "#009E73", "Nyankunde" = "#D55E00",
-  "Bambu"     = "#88CCEE", "Aru"       = "#CC79A7",
-  "Komanda"   = "#0072B2", "Mangala"   = "#999999",
-  "Nizi"      = "#117733", "Kilo"      = "#882255"
-)
+#| label: fig-comparison-poe
+#| fig-cap: "Cross-source comparison of daily Point of Entry (POE) screening totals. Automated extraction reports a single aggregate per sitrep date; Kraemer lab data are summed across individual checkpoints to produce a daily total."
+#| fig-width: 9
+#| fig-height: 6
+poe_comp <- bind_rows(poe_ours, kraemer_poe) |>
+  pivot_longer(c(total_passed, total_screened, total_handwashing, total_sensitised),
+               names_to = "metric", values_to = "count") |>
+  mutate(
+    metric = recode(metric,
+      "total_passed"      = "Total passed",
+      "total_screened"    = "Screened",
+      "total_handwashing" = "Handwashing stations",
+      "total_sensitised"  = "Sensitised"
+    ),
+    metric = factor(metric, levels = c("Total passed", "Screened",
+                                        "Handwashing stations", "Sensitised")),
+    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+  ) |>
+  filter(!is.na(count))
 
-kraemer_contacts |>
-  mutate(zone = factor(zone, levels = names(CONTACTS_PAL))) |>
-  ggplot(aes(x = date, y = contacts_traced, colour = zone, group = zone)) +
-  geom_line(linewidth = 1.1, na.rm = TRUE) +
-  geom_point(size = 2.8, na.rm = TRUE) +
-  scale_colour_manual(values = CONTACTS_PAL, na.translate = FALSE) +
+p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = source)) +
+  geom_line(linewidth = 0.9, na.rm = TRUE) +
+  geom_point(size = 2.5, na.rm = TRUE) +
+  facet_wrap(~ metric, scales = "free_y", ncol = 2) +
+  scale_colour_manual(values = PAL_RESP) +
+  scale_linetype_manual(values = LTY_RESP) +
   scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.12))) +
   labs(
-    title    = "MVE DRC \u2014 Cumulative contacts traced",
-    subtitle = "Cumulative contacts traced per reporting day, by health zone",
-    x = NULL, y = "Contacts traced (cumulative)", colour = NULL,
-    caption  = "Source: Kraemer lab / INSP DRC situation reports"
+    title    = "MVE DRC \u2014 POE screening — cross-source validation",
+    subtitle = "Daily aggregate totals: automated extraction vs Kraemer lab (sum across checkpoints)",
+    x = NULL, y = "Count", colour = NULL, linetype = NULL,
+    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
-  theme_sitrep(base_size = 12)
+  theme_sitrep(base_size = 11) +
+  theme(
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 8),
+    panel.border = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
+    panel.spacing = unit(0.6, "lines")
+  )
+ggsave(here("outputs", "plots", "fig-comparison-poe.png"), plot = p,
+       width = 9, height = 6, dpi = 300)
+p
+```
+
+```{r}
+#| label: fig-comparison-contacts
+#| fig-cap: "Cross-source comparison of cumulative contacts traced by health zone. Solid lines: automated extraction (cummax applied); dashed lines: Kraemer lab (manual extraction). ND values excluded."
+#| fig-width: 11
+#| fig-height: 7
+contacts_ours <- df |>
+  filter(
+    count_type == "Cumules",
+    zone %in% ZONE_LEVELS,
+    !is.na(contacts), contacts != ""
+  ) |>
+  mutate(contacts = suppressWarnings(as.numeric(contacts)),
+         zone = factor(zone, levels = ZONE_LEVELS)) |>
+  filter(!is.na(contacts)) |>
+  arrange(zone, date) |>
+  group_by(zone) |>
+  mutate(contacts = cummax(contacts)) |>
+  ungroup() |>
+  transmute(date, zone, contacts, source = "Automated extraction")
+
+contacts_kraemer <- kraemer_contacts |>
+  filter(zone %in% ZONE_LEVELS) |>
+  transmute(date, zone = factor(zone, levels = ZONE_LEVELS),
+            contacts = contacts_traced, source = "Kraemer lab")
+
+contacts_comp <- bind_rows(contacts_ours, contacts_kraemer) |>
+  filter(!is.na(contacts)) |>
+  left_join(zone_province_lut, by = "zone") |>
+  mutate(
+    source   = factor(source, levels = c("Automated extraction", "Kraemer lab")),
+    province = factor(province, levels = c("Ituri", "Nord-Kivu")),
+    zone     = factor(zone, levels = ZONE_LEVELS)
+  )
+
+p <- ggplot(contacts_comp,
+            aes(x = date, y = contacts, colour = source, linetype = source)) +
+  geom_line(linewidth = 0.9, na.rm = TRUE) +
+  geom_point(size = 2.0, na.rm = TRUE) +
+  facet_nested(~ province + zone, scales = "free_y") +
+  scale_colour_manual(values = PAL_COMP[c("Automated extraction","Kraemer lab")]) +
+  scale_linetype_manual(values = LTY_COMP[c("Automated extraction","Kraemer lab")]) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.15))) +
+  labs(
+    title    = "MVE DRC \u2014 Cumulative contacts traced — cross-source validation",
+    subtitle = "Automated extraction (cummax) vs Kraemer lab (manual extraction, same source PDFs)",
+    x = NULL, y = "Cumulative contacts traced", colour = NULL, linetype = NULL,
+    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
+  ) +
+  theme_sitrep(base_size = 9) +
+  theme(
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 7),
+    panel.border = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
+    panel.spacing = unit(0.5, "lines")
+  )
+ggsave(here("outputs", "plots", "fig-comparison-contacts.png"), plot = p,
+       width = 11, height = 7, dpi = 300)
+p
 ```
 
 ## Discussion
