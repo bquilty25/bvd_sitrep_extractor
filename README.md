@@ -66,20 +66,20 @@ Run these two commands each day. They can be chained, scheduled with cron, or ru
 source .env
 
 # 1. Check INSP website for new PDFs and archive any that are new
-python3 fetch_sitreps.py
+python3 scripts/fetch_sitreps.py
 
 # 2. Extract only the newly downloaded PDFs and append to the master linelist
-python3 extract_sitrep.py --update
+python3 scripts/extract_sitrep.py --update
 ```
 
-`fetch_sitreps.py` scrapes `insp.cd/ebola/` and `insp.cd/category/sitrep/` for PDF links, downloads new ones to `pdfs/`, and records them in `pdfs/manifest.json`. PDFs are kept permanently as a local archive in case they are removed from the website.
+`scripts/fetch_sitreps.py` scrapes `insp.cd/ebola/` and `insp.cd/category/sitrep/` for PDF links, downloads new ones to `pdfs/`, and records them in `pdfs/manifest.json`. PDFs are kept permanently as a local archive in case they are removed from the website.
 
-`extract_sitrep.py --update` reads `pdfs/`, skips any file already recorded in `outputs/processed.json`, extracts the rest, and appends their rows to `master_combined_counts.csv`. Each new SitRep's verbatim tables also land in `outputs/<pdf_stem>/`.
+`scripts/extract_sitrep.py --update` reads `pdfs/`, skips any file already recorded in `outputs/processed.json`, extracts the rest, and appends their rows to `master_combined_counts.csv`. Each new SitRep's verbatim tables also land in `outputs/<pdf_stem>/`.
 
 **Cron example** (runs daily at 08:00):
 
 ```
-0 8 * * * cd /path/to/bvd_sitrep_extractor && source .env && python3 fetch_sitreps.py && python3 extract_sitrep.py --update
+0 8 * * * cd /path/to/bvd_sitrep_extractor && source .env && python3 scripts/fetch_sitreps.py && python3 scripts/extract_sitrep.py --update
 ```
 
 ---
@@ -90,19 +90,19 @@ Extract a single PDF directly:
 
 ```bash
 source .env
-python3 extract_sitrep.py path/to/SitRep.pdf
+python3 scripts/extract_sitrep.py path/to/SitRep.pdf
 ```
 
 If the filename follows the standard INSP convention (`*SitRep*MVE*RDC*.pdf`), the path can be omitted and the script will auto-detect it:
 
 ```bash
-python3 extract_sitrep.py
+python3 scripts/extract_sitrep.py
 ```
 
 Use `--output-dir` to write elsewhere:
 
 ```bash
-python3 extract_sitrep.py SitRep.pdf --output-dir results/2026-05-20/
+python3 scripts/extract_sitrep.py SitRep.pdf --output-dir results/2026-05-20/
 ```
 
 ### Batch extraction
@@ -110,7 +110,7 @@ python3 extract_sitrep.py SitRep.pdf --output-dir results/2026-05-20/
 Pass multiple PDFs to process them all in one run and produce a combined master file:
 
 ```bash
-python3 extract_sitrep.py SitRep_001.pdf SitRep_002.pdf SitRep_006.pdf
+python3 scripts/extract_sitrep.py SitRep_001.pdf SitRep_002.pdf SitRep_006.pdf
 ```
 
 Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_counts.csv` is written at the `outputs/` root.
@@ -120,9 +120,9 @@ Each PDF's verbatim outputs go into `outputs/<pdf_stem>/`. A `master_combined_co
 ### Full usage reference
 
 ```
-python3 fetch_sitreps.py [--pdf-dir DIR] [--pages URL [URL ...]] [--since YYYY-MM]
+python3 scripts/fetch_sitreps.py [--pdf-dir DIR] [--pages URL [URL ...]] [--since YYYY-MM]
 
-python3 extract_sitrep.py [PATH_TO_PDF ...] [--output-dir DIR]
+python3 scripts/extract_sitrep.py [PATH_TO_PDF ...] [--output-dir DIR]
                           [--update] [--pdf-dir DIR]
 
 fetch_sitreps.py options:
@@ -221,9 +221,9 @@ Expected result: **44 passed** (unit tests only — schema and data tests are sk
 
 ## How it works
 
-`fetch_sitreps.py` scrapes INSP web pages for `wp-content/uploads/*.pdf` links, filters for MVE/SitRep-relevant filenames, and downloads new ones to the local archive.
+`scripts/fetch_sitreps.py` scrapes INSP web pages for `wp-content/uploads/*.pdf` links, filters for MVE/SitRep-relevant filenames, and downloads new ones to the local archive.
 
-`extract_sitrep.py` sends each PDF to Claude as a base64-encoded `document` block. Claude processes each page as both a rendered image and extracted text simultaneously — this is what allows it to correctly read visually formatted tables, merged cells, and footnotes that plain text extraction tools would mangle. Claude returns a structured JSON object with both tables, which is converted to pandas DataFrames and mapped to the standardised schema.
+`scripts/extract_sitrep.py` sends each PDF to Claude as a base64-encoded `document` block. Claude processes each page as both a rendered image and extracted text simultaneously — this is what allows it to correctly read visually formatted tables, merged cells, and footnotes that plain text extraction tools would mangle. Claude returns a structured JSON object with both tables, which is converted to pandas DataFrames and mapped to the standardised schema.
 
 The `--update` mode compares the PDF archive against `processed.json` to extract only new files, then appends their rows to the master counts table rather than overwriting it.
 
@@ -234,5 +234,5 @@ The `--update` mode compares the PDF archive against `processed.json` to extract
 Each SitRep may use slightly different column names. If the combined counts table has blank columns that should have data:
 
 1. Open `outputs/<pdf_stem>/raw_extraction.json` and check the exact column names Claude found.
-2. Update the column name mappings in `build_combined_counts()` in [extract_sitrep.py](extract_sitrep.py).
+2. Update the column name mappings in `build_combined_counts()` in [scripts/extract_sitrep.py](scripts/extract_sitrep.py).
 3. Re-run `pytest tests/` — the `TestCombinedContent` tests will catch any remaining gaps.

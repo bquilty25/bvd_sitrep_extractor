@@ -18,8 +18,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-# Allow imports from the parent directory
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Allow imports from scripts/
+sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
 from extract_sitrep import (
     clean_json_text, build_dataframe, coerce_numerics,
