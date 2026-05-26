@@ -1,38 +1,47 @@
 {
-  "Draft-MVE-Ituri-ActuelB-1.pdf": {
+  "MVE_SitRep_001_2026-05-16.pdf": {
     "processed_at": "2026-05-26T12:37:22.320678+00:00",
-    "rows_added": 1
+    "rows_added": 1,
+    "original_filename": "Draft-MVE-Ituri-ActuelB-1.pdf"
   },
-  "Draft_SitRep_MVE_RDC_2022vf2_IM.pdf": {
+  "MVE_SitRep_008_2026-05-23.pdf": {
     "processed_at": "2026-05-26T12:41:10.628486+00:00",
-    "rows_added": 27
+    "rows_added": 27,
+    "original_filename": "Draft_SitRep_MVE_RDC_2022vf2_IM.pdf"
   },
-  "Draft_SitRep_MVE_RDC_20260520_vf1.pdf": {
+  "MVE_SitRep_005_2026-05-20.pdf": {
     "processed_at": "2026-05-26T12:43:35.805809+00:00",
-    "rows_added": 18
+    "rows_added": 18,
+    "original_filename": "Draft_SitRep_MVE_RDC_20260520_vf1.pdf"
   },
-  "SitRep_MVE_RDC_2024fv1_IM.pdf": {
+  "MVE_SitRep_009_2026-05-24.pdf": {
     "processed_at": "2026-05-26T12:47:20.325588+00:00",
-    "rows_added": 27
+    "rows_added": 27,
+    "original_filename": "SitRep_MVE_RDC_2024fv1_IM.pdf"
   },
-  "SitRep_MVE_RDC_20260512-FDv2_IM.pdf": {
+  "MVE_SitRep_007_2026-05-22.pdf": {
     "processed_at": "2026-05-26T12:51:13.261007+00:00",
-    "rows_added": 26
+    "rows_added": 26,
+    "original_filename": "SitRep_MVE_RDC_20260512-FDv2_IM.pdf"
   },
-  "SitRep_MVE_RDC_20260521_editing-FV.pdf": {
+  "MVE_SitRep_006_2026-05-21.pdf": {
     "processed_at": "2026-05-26T12:54:55.083904+00:00",
-    "rows_added": 21
+    "rows_added": 21,
+    "original_filename": "SitRep_MVE_RDC_20260521_editing-FV.pdf"
   },
-  "SitRep_MVE_RDC_NA°010_25_05_26fv_IM.pdf": {
+  "MVE_SitRep_010_2026-05-25.pdf": {
     "processed_at": "2026-05-26T12:58:04.287896+00:00",
-    "rows_added": 34
+    "rows_added": 34,
+    "original_filename": "SitRep_MVE_RDC_NA°010_25_05_26fv_IM.pdf"
   },
-  "Sitrep_MVE-Ituri_N°-002_18-mai-2026.pdf": {
+  "MVE_SitRep_002_2026-05-18.pdf": {
     "processed_at": "2026-05-26T12:59:39.239933+00:00",
-    "rows_added": 0
+    "rows_added": 0,
+    "original_filename": "Sitrep_MVE-Ituri_N°-002_18-mai-2026.pdf"
   },
-  "Sitrep_MVE-Ituri_N°004-au-20-mai-2026.pdf": {
+  "MVE_SitRep_003_2026-05-20.pdf": {
     "processed_at": "2026-05-26T13:01:52.098047+00:00",
-    "rows_added": 10
+    "rows_added": 10,
+    "original_filename": "Sitrep_MVE-Ituri_N°004-au-20-mai-2026.pdf"
   }
 }

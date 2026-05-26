@@ -1,35 +1,35 @@
-﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,0,Bunia,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,0,Rwampara,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,0,Mongbwalu,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,,Aru,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,0,Nyankunde,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,1,,0,,,0,0,Nizi,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,1,,0,,,0,,Kilo,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,2,0,0,,,0,0,,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,TRUE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,,Goma,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,2,,,0,,Butembo,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,,Katwa,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,1,,,0,,Oicha,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,1,,,0,,Kalunguta,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,,,0,,,0,,Miti Murhesa,Sud-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-24/05/2026,24/05/2026,Nouveaux,0,0,4,,,0,0,Sous total Nord-Kivu/Sud-Kivu,,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,TRUE
-24/05/2026,24/05/2026,Nouveaux,2,0,4,,,0,0,Total,,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,TRUE
-,24/05/2026,Cumules,4,,1,1,,,0,Aru,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,6,,0,2,,,183,Bambu,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,249,,24,48,,,404,Bunia,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,8,,1,2,,,0,Kilo,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,339,,19,88,,,222,Mongbwalu,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,6,,2,2,,,22,Nizi,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,45,,9,11,,,365,Nyankunde,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,228,,32,69,,,621,Rwampara,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,0,,6,0,,,0,Echantillons sans fiche,Ituri,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,7,,3,0,,,22,Butembo,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,0,,1,0,,,28,Goma,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,13,,4,0,,,99,Katwa,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,0,,0,0,,,249,Karissibi,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,0,,0,0,,,16,Kyondo,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,,,1,,,,,Oicha,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,,,1,,,,,Kalunguta,Nord-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,1,,1,0,,,,Miti Murhesa,Sud-Kivu,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,FALSE
-,24/05/2026,Cumules,906,,105,223,,,2231,Total,,SitRep_MVE_RDC_NA°010_25_05_26fv_IM,TRUE
+count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,0.0,Bunia,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,0.0,Rwampara,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,0.0,Mongbwalu,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,,Aru,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,0.0,Nyankunde,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,1.0,,0,,,0.0,0.0,Nizi,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,1.0,,0,,,0.0,,Kilo,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,2.0,0.0,0,,,0.0,0.0,,Ituri,MVE_SitRep_010_2026-05-25,TRUE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,,Goma,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,2,,,0.0,,Butembo,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,,Katwa,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,1,,,0.0,,Oicha,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,1,,,0.0,,Kalunguta,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,,,0,,,0.0,,Miti Murhesa,Sud-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+24/05/2026,24/05/2026,Nouveaux,0.0,0.0,4,,,0.0,0.0,Sous total Nord-Kivu/Sud-Kivu,,MVE_SitRep_010_2026-05-25,TRUE
+24/05/2026,24/05/2026,Nouveaux,2.0,0.0,4,,,0.0,0.0,Total,,MVE_SitRep_010_2026-05-25,TRUE
+,24/05/2026,Cumules,4.0,,1,1.0,,,0.0,Aru,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,6.0,,0,2.0,,,183.0,Bambu,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,249.0,,24,48.0,,,404.0,Bunia,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,8.0,,1,2.0,,,0.0,Kilo,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,339.0,,19,88.0,,,222.0,Mongbwalu,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,6.0,,2,2.0,,,22.0,Nizi,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,45.0,,9,11.0,,,365.0,Nyankunde,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,228.0,,32,69.0,,,621.0,Rwampara,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,0.0,,6,0.0,,,0.0,Echantillons sans fiche,Ituri,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,7.0,,3,0.0,,,22.0,Butembo,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,0.0,,1,0.0,,,28.0,Goma,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,13.0,,4,0.0,,,99.0,Katwa,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,0.0,,0,0.0,,,249.0,Karissibi,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,0.0,,0,0.0,,,16.0,Kyondo,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,,,1,,,,,Oicha,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,,,1,,,,,Kalunguta,Nord-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,1.0,,1,0.0,,,,Miti Murhesa,Sud-Kivu,MVE_SitRep_010_2026-05-25,FALSE
+,24/05/2026,Cumules,906.0,,105,223.0,,,2231.0,Total,,MVE_SitRep_010_2026-05-25,TRUE
