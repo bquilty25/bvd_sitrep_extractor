@@ -20,7 +20,7 @@ execute:
 ```{r}
 #| label: setup
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
-pacman::p_load(tidyverse, lubridate, here, scales, ggrepel, flextable)
+pacman::p_load(tidyverse, lubridate, here, scales, ggrepel, flextable, ggh4x)
 
 set_flextable_defaults(
   font.family = "Arial",
@@ -45,7 +45,13 @@ df <- df_raw |>
     confirmed   = as.numeric(cases_confirmed),
     deaths      = coalesce(as.numeric(deaths_suspected), as.numeric(deaths_probable)),
     is_agg      = (is_aggregate == "TRUE"),
-    unconfirmed = coalesce(suspect, 0L) + coalesce(probable, 0L)
+    # Only sum to zero when at least one component is present; otherwise NA
+    # (avoids a false zero for zones that simply weren't reported in that sitrep)
+    unconfirmed = if_else(
+      !is.na(suspect) | !is.na(probable),
+      coalesce(suspect, 0L) + coalesce(probable, 0L),
+      NA_real_
+    )
   )
 
 ZONE_LEVELS <- c(
@@ -106,9 +112,11 @@ zone_ts <- df |>
     unconfirmed_raw = unconfirmed,
     rev_confirmed   = confirmed   < lag(cummax(replace_na(confirmed,   0L)), default = 0L),
     rev_unconfirmed = unconfirmed < lag(cummax(replace_na(unconfirmed, 0L)), default = 0L),
-    unconfirmed = cummax(replace_na(unconfirmed, 0L)),
-    confirmed   = cummax(replace_na(confirmed,   0L)),
-    deaths      = cummax(replace_na(deaths,      0L))
+    # Apply cummax only over observed values; leave NAs before the first
+    # real observation so geom_line breaks rather than drawing from zero
+    unconfirmed = {x <- unconfirmed; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
+    confirmed   = {x <- confirmed;   i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
+    deaths      = {x <- deaths;      i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x}
   ) |>
   ungroup()
 
@@ -416,7 +424,7 @@ Cumulative zone-level counts from this pipeline are compared against the [Kraeme
 #| label: fig-comparison
 #| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: this extraction; dashed lines: Kraemer lab. Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026."
 #| fig-width: 12
-#| fig-height: 9
+#| fig-height: 11
 PAL_COMP <- c("This extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
 LTY_COMP <- c("This extraction" = "solid",   "Kraemer lab" = "dashed")
 
@@ -442,7 +450,7 @@ ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) 
   scale_colour_manual(values = PAL_COMP) +
   scale_linetype_manual(values = LTY_COMP) +
   scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
-  scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.15))) +
+  scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
     subtitle = "Cumulative counts: this extraction vs Kraemer lab (kraemer-lab/Ebola_DRC_2026)",
@@ -450,7 +458,11 @@ ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) 
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
   theme_sitrep(base_size = 9) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+  theme(
+    axis.text.x     = element_text(angle = 45, hjust = 1, size = 7),
+    panel.border    = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
+    panel.spacing   = unit(0.6, "lines")
+  )
 ```
 
 Table 2 presents numerical differences at the most recent date available in each source for each zone.
