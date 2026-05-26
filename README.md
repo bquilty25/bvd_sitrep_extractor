@@ -2,7 +2,7 @@
 
 > AI-assisted development: this pipeline and report were developed with GitHub Copilot and the Anthropic Claude API (`claude-sonnet-4-6`), with human review.
 
-Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
+Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/sitrep_report.html#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
 
 Author: Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)
 

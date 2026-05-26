@@ -302,25 +302,25 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed.csv") |>
 
 ## Introduction
 
-This report provides an automated summary of the 2026 DRC Maladie à Virus Ebola (MVE) outbreak in Ituri and Nord-Kivu, using data extracted from official INSP situation reports.
+This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo, covering cases in Ituri and Nord-Kivu provinces. Data are drawn from official situation reports published by the Institut National de Santé Publique (INSP DRC) and are updated automatically as new reports become available.
 
 ## Methods
 
 ### Data sources
 
-Data were extracted from INSP DRC PDF situation reports for the 2026 outbreak, downloaded from <https://insp.cd/ebola/> with manifest-based incremental tracking. MD5 checksums showed these PDFs are byte-identical to those used by the Kraemer lab. Cross-source validation used Kraemer's manually coded long-format time series from the same source documents.
+Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by the Kraemer lab (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The Kraemer lab series, produced by manual data entry, was used as an independent check on our automated extraction.
 
 ### Automated PDF extraction
 
-PDFs were sent to Claude (`claude-sonnet-4-6`, temperature 0) as base64 documents for visual table extraction. The pipeline extracts four outputs: new cases, cumulative cases/deaths, patient movement (from SitRep 006 onwards), and PoE/PoC activity, plus a verbatim text transcript for audit. Output is validated and normalised to a common schema by province and health zone.
+Each PDF was read by Claude (Anthropic, `claude-sonnet-4-6`), which looks at the page visually — the same way a person would — rather than relying on the underlying text. This allows it to handle the complex table layouts in the situation reports accurately. From each PDF we extract four things: daily new case counts, cumulative case and death totals, patient movement through isolation units (available from SitRep 006 onwards), and Point of Entry screening activity. A full text transcript of each report is also saved for audit purposes.
 
 ### Data harmonisation
 
-Zone names were standardised, and suspect plus probable counts were combined as an unconfirmed category to handle naming differences between reports. Cumulative series were constrained to be non-decreasing within zone, and when multiple rows existed for the same zone-date the row with the highest unconfirmed count was retained.
+Health zone names were standardised to a consistent spelling across all reports. Suspected and probable case counts were added together into a single "unconfirmed" category, since different reports label these columns differently. Cumulative totals were not allowed to decrease over time (a count cannot go backwards), and where more than one row existed for the same zone and date, the higher value was kept.
 
 ### Statistical analysis
 
-Analyses were run in R (version `r R.version$major`.`r R.version$minor`) using `tidyverse` [@tidyverse], with `ggplot2` figures [@ggplot2], `flextable` tables [@flextable], and Quarto rendering.
+All analysis and figures were produced in R (version `r R.version$major`.`r R.version$minor`) using the `tidyverse` [@tidyverse], `ggplot2` [@ggplot2], and `flextable` [@flextable] packages. This report was rendered automatically with Quarto.
 
 ## Results
 
@@ -528,13 +528,13 @@ bind_rows(zone_latest, total_row) |>
 
 ### Cross-source validation
 
-Zone-level cumulative counts from this pipeline were compared with the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) manual extraction. As both use the same MD5-verified PDFs, remaining differences reflect extraction and interpretation choices rather than source-document differences. Name variants (Mongbwalu/Mongbalu, Nyankunde/Nyakunde) were harmonised, and `ND` values were treated as missing.
+We checked our automated extraction against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) manually coded dataset, which is built from the same situation reports. Because both datasets work from identical PDFs, any differences between them tell us something about how the tables were interpreted — which is useful for catching errors on either side and understanding ambiguous formatting in the source documents. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
 
 ### Data quality notes — case counts
 
-Two Mongbwalu issues are important for interpretation. First, the 14 May value of 246 suspected cases appears in SitRep 001 only as an Ituri-wide aggregate, not as a zone-level row. The first report with zone-level Mongbwalu data in this pipeline is SitRep 004 (18 May, 302 suspected), so the apparent early zone trajectory reflects incomplete zone-level coverage.
+Two issues in the Mongbwalu data are worth noting. First, the early Kraemer data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the Kraemer data; this is a gap in zone-level reporting, not a sign that cases only began in May.
 
-Second, both this pipeline (pre-cummax) and the Kraemer series show a drop in Mongbwalu cumulative confirmed cases from 14 (21 May) to 10 (22 May). Because cumulative counts should not decrease, this likely reflects a sitrep reporting/reclassification issue rather than extraction artefact. The cummax-constrained automated series suppresses this dip; the Kraemer series shows it directly.
+Second, both our data and the Kraemer data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a correction or reclassification in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the Kraemer series shows the raw figure.
 
 ```{r}
 #| label: fig-comparison
@@ -699,11 +699,11 @@ poe_ours <- read_csv(
 
 ### Data quality notes — response indicators
 
-Two response-indicator discrepancies were identified. For Rwampara on 21 May, SitRep 007 presents three unexplained sub-columns; summing rules are ambiguous, so both series should be treated cautiously at this point. For 20-21 May, earlier table layouts likely led to a Kraemer column-mapping error in new admissions; concordance improves from 22 May onward when the layout is standardised.
+Two points are worth flagging when comparing the response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three sub-columns without explaining what each represents. Both datasets handle this differently, so the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005 and 006 used an earlier table layout that made the in-bed count and new admissions columns harder to distinguish; the two datasets differ slightly on those dates as a result. From 22 May onwards, when the table format was standardised, the datasets are in close agreement.
 
 ```{r}
 #| label: fig-comparison-response
-#| fig-cap: "Cross-source comparison of zone-level response indicators. Solid lines: automated extraction; dashed lines: Kraemer lab. The 21 May Rwampara values are unreliable in both series: the sitrep presents three unexplained sub-columns whose relationship is ambiguous. For 20–21 May, Kraemer's new-admissions values reflect a column-mapping error in the earlier table format."
+#| fig-cap: "Cross-source comparison of zone-level response indicators. Solid lines: automated extraction; dashed lines: Kraemer lab. Both series treat the ambiguous 21 May Rwampara sub-columns differently; values for that date should be interpreted cautiously. The two datasets differ slightly on 20–21 May due to an ambiguous table layout in SitReps 005–006, and are in close agreement from 22 May onwards."
 #| fig-width: 12
 #| fig-height: 9
 PAL_RESP <- c("Automated extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
@@ -874,6 +874,6 @@ p
 
 ## Discussion
 
-The outbreak trajectory shows rising cumulative burden over the reporting period, with confirmed cases remaining a minority of total reported cases. Transmission spans multiple zones across Ituri and Nord-Kivu, supporting the need for coordinated multi-province response.
+Case counts have risen steadily over the reporting period. Confirmed cases remain a small fraction of all reported cases, which is typical in field settings where laboratory testing capacity is limited. The outbreak spans health zones in both Ituri and Nord-Kivu, pointing to the need for a coordinated response across provincial boundaries.
 
-Interpretation should account for data-structure limitations and reporting artefacts. Early reports include limited zone-level detail, response indicators are not consistently structured across sitreps, and cumulative-series enforcement (cummax) can conceal true downward revisions. Because this pipeline and the Kraemer series use the same MD5-verified PDFs, observed divergences primarily reflect extraction and interpretation differences, especially around ambiguous table layouts and early aggregate-only reporting.
+A few limitations are worth keeping in mind. Earlier situation reports did not break case counts down by health zone, so the zone-level data only covers part of the outbreak period. Response indicators such as hospitalisations and contacts traced are not formatted consistently across reports, which makes trend comparisons harder. Comparing our automated extraction with the Kraemer lab manual series provides a useful cross-check: where the two agree we can be more confident in the figures; where they differ, it usually points to genuine ambiguity in the source document that is worth flagging to the data providers.
