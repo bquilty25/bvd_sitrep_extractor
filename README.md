@@ -1,11 +1,16 @@
 # SitRep BVD DRC — Extraction Pipeline
 
-Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report.
+> AI-assisted development: this pipeline and report were developed with GitHub Copilot and the Anthropic Claude API (`claude-sonnet-4-6`), with human review.
+
+Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including comparison with Kraemer Lab manual extraction
+- [Cross-source validation (HTML)](outputs/sitrep_report.html#cross-source-validation)
 
 ## Quick Start
 
 Prerequisites:
 - Python 3.10+
+- R (for report generation)
+- Quarto CLI (for rendering HTML report)
 - Anthropic API key
 
 Setup:
