@@ -15,6 +15,9 @@ env/
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
 
+# Slide assets — large PNG images stored locally, not committed
+assets/
+
 # OS
 .DS_Store
 Thumbs.db
