@@ -177,9 +177,17 @@ Also provide for EACH of TABLE 1 and TABLE 2:
 
 TEXT FALLBACK FOR ROW FIELDS (TABLE 1 and TABLE 2 only):
   If a numeric field is absent from the table itself but its value is explicitly and
-  unambiguously stated in the body text, Points Saillants, or footnotes for the same
-  reporting unit (zone / province / total) AND for the same reporting period (new cases
-  for TABLE 1; cumulative totals for TABLE 2), populate that field from the text.
+  unambiguously stated in the body text, Points Saillants, bullet points, or footnotes
+  for the same reporting unit (zone / province / Total row) AND for the same reporting
+  period (new cases for TABLE 1; cumulative totals for TABLE 2), populate that field
+  from the text.
+  IMPORTANT — this applies especially to "deces_confirmes" on the Total row of TABLE 2:
+  many SitReps state the cumulative confirmed-death count ONLY in the Points Saillants
+  narrative (e.g. "Parmi les 12 décès confirmés, …" or "Cumul de X décès confirmés")
+  and NOT in the table. You MUST populate deces_confirmes for the Total row from this
+  narrative figure when it is absent from the table.
+  Similarly, if a province-level summary bullet states confirmed deaths for a province
+  (e.g. "110 en Ituri dont X décès") that are not in the table, populate them.
   Do NOT pull cumulative totals into TABLE 1 rows, or daily new-case counts into TABLE 2
   rows. Do NOT infer, estimate, or calculate — only use figures explicitly stated in the
   document for that table's period.
@@ -762,6 +770,63 @@ def save_processed(path: Path, processed: dict) -> None:
     path.write_text(json.dumps(processed, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _run_rebuild(output_dir: Path) -> None:
+    """Rebuild all master CSVs from scratch by reading every per-sitrep output directory."""
+    sitreps_dir = output_dir / "sitreps"
+    if not sitreps_dir.exists():
+        sys.exit(f"Error: sitreps directory not found at {sitreps_dir}")
+
+    combined_dfs: list[pd.DataFrame] = []
+    response_dfs: list[pd.DataFrame] = []
+    poe_dfs:      list[pd.DataFrame] = []
+
+    for sitrep_dir in sorted(sitreps_dir.iterdir()):
+        if not sitrep_dir.is_dir():
+            continue
+        for csv_name, target in [
+            ("combined_counts.csv",  combined_dfs),
+            ("response_counts.csv",  response_dfs),
+            ("poe_counts.csv",        poe_dfs),
+        ]:
+            p = sitrep_dir / csv_name
+            if p.exists():
+                target.append(pd.read_csv(p, dtype=str, encoding="utf-8-sig").fillna(""))
+
+    if not combined_dfs:
+        sys.exit("Error: no per-sitrep combined_counts.csv files found under "
+                 f"{sitreps_dir}")
+
+    master_df = _sort_master(
+        pd.concat(combined_dfs, ignore_index=True)
+        .drop_duplicates(subset=["count_type", "sitrep_source", "zone", "count_end_date"])
+    )
+    master_path = output_dir / "master_combined_counts.csv"
+    master_df.to_csv(master_path, index=False, encoding="utf-8-sig")
+    print(f"  master_combined_counts.csv   →  {len(master_df)} rows")
+
+    if response_dfs:
+        resp_df = (
+            pd.concat(response_dfs, ignore_index=True)
+            .drop_duplicates(subset=["date", "zone", "sitrep_source"])
+        )
+        resp_path = output_dir / "master_response_counts.csv"
+        resp_df.to_csv(resp_path, index=False, encoding="utf-8-sig")
+        print(f"  master_response_counts.csv   →  {len(resp_df)} rows")
+
+    if poe_dfs:
+        poe_all = (
+            pd.concat(poe_dfs, ignore_index=True)
+            .drop_duplicates(subset=["date", "sitrep_source"])
+        )
+        poe_path = output_dir / "master_poe_counts.csv"
+        poe_all.to_csv(poe_path, index=False, encoding="utf-8-sig")
+        print(f"  master_poe_counts.csv        →  {len(poe_all)} rows")
+
+    n_sitreps = len(combined_dfs)
+    print(f"\nRebuilt from {n_sitreps} sitrep director{'y' if n_sitreps == 1 else 'ies'} "
+          f"under {sitreps_dir}/")
+
+
 def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
     """Sort the master counts table chronologically by count_end_date, then count_type."""
     tmp = df.copy()
@@ -900,6 +965,9 @@ def main() -> None:
             "Environment variables:\n"
             "  ANTHROPIC_API_KEY  or  CLAUDE_API_KEY   Anthropic API key (required)\n"
             "  ANTHROPIC_MODEL                         Model override (default: claude-sonnet-4-6)\n"
+            "\nWorkflow:\n"
+            "  1. python3 extract_sitrep.py path/to/SitRep.pdf   # re-extract one PDF\n"
+            "  2. python3 extract_sitrep.py --rebuild             # rebuild master CSVs\n"
         ),
     )
     parser.add_argument(
@@ -931,9 +999,24 @@ def main() -> None:
         metavar="DIR",
         help="Archived PDF directory used with --update (default: ./pdfs).",
     )
+    parser.add_argument(
+        "--rebuild",
+        action="store_true",
+        help=(
+            "Rebuild master_combined_counts.csv (and master_response/poe CSVs) "
+            "from scratch by reading every per-sitrep directory under "
+            "outputs/sitreps/. No API key required."
+        ),
+    )
     args = parser.parse_args()
 
     output_dir = Path(args.output_dir).expanduser().resolve()
+
+    # ── Rebuild mode: no API key needed
+    if args.rebuild:
+        print("Rebuilding master CSVs from per-sitrep output directories …")
+        _run_rebuild(output_dir)
+        return
 
     # ── Resolve API key
     api_key = (
@@ -972,9 +1055,11 @@ def main() -> None:
     n = len(pdf_paths)
 
     if n == 1:
-        # ── Single-PDF: backward-compatible behaviour
+        # ── Single-PDF: save to per-sitrep subfolder (consistent with --update)
+        stem = _canonical_output_stem(pdf_paths[0], pdf_paths[0].parent)
+        per_dir = output_dir / "sitreps" / stem
         combined_df, data, new_cases_df, cumulative_df, response_df, poe_df = _process_one(
-            client, pdf_paths[0], output_dir
+            client, pdf_paths[0], per_dir
         )
         print()
         print("═" * 55)

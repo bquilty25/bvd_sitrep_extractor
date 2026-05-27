@@ -1,0 +1,19 @@
+﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
+,25/05/2026,Cumules,4,,1,1,,,0,Aru,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,6,,0,2,,,183,Bambu,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,270,,24,55,,,404,Bunia,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,18,,1,0,,,0,Kilo,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,364,,19,88,,,222,Mongbwalu,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,9,,2,2,,,22,Nizi,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,66,,9,15,,,365,Nyankunde,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,240,,32,75,,,621,Rwampara,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,0,,6,0,,,0,Echantillons sans fiche,Ituri,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,7,,3,0,,,22,Butembo,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,0,,1,0,,,28,Goma,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,13,,4,0,,,99,Katwa,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,,,0,0,,,249,Karissibi,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,,,1,0,,,16,Kyondo,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,,,1,0,,,0,Oicha,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,0,,1,0,,,0,Kalunguta,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,1,,1,0,,,,Miti Murhesa,Sud-Kivu,MVE_SitRep_011_2026-05-27,FALSE
+,25/05/2026,Cumules,998,,106,238,,12,2231,Total,,MVE_SitRep_011_2026-05-27,TRUE
