@@ -1,5 +1,7 @@
 anthropic>=0.40.0
 json-repair>=0.30.0
 pandas>=2.0.0
+pdf2image>=1.17.0
+Pillow>=10.0.0
 pytest>=8.0.0
 requests>=2.31.0
