@@ -597,3 +597,204 @@ class TestCombinedContent:
             "All province values are empty"
         assert combined["zone"].str.strip().ne("").any(), \
             "All zone values are empty"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 4. PIPELINE STATUS TESTS  (unprocessed PDFs)
+# ─────────────────────────────────────────────────────────────────────────────
+
+PDF_DIR        = Path(__file__).parent.parent / "pdfs"
+SITREPS_DIR    = OUTPUTS / "sitreps"
+PROCESSED_JSON = OUTPUTS / "processed.json"
+MASTER_CSV     = OUTPUTS / "master_combined_counts.csv"
+KRAEMER_LONG   = Path(__file__).parent.parent / "Ebola_DRC_2026" / "build" / "long"
+
+
+class TestPipelineStatus:
+    """Catch PDFs that have been downloaded but not yet extracted."""
+
+    def test_no_unprocessed_pdfs(self):
+        if not PDF_DIR.exists():
+            pytest.skip("pdfs/ directory not found")
+        if not PROCESSED_JSON.exists():
+            pytest.skip("outputs/processed.json not found — run extract_sitrep.py first")
+
+        with open(PROCESSED_JSON, encoding="utf-8") as fh:
+            processed = json.load(fh)
+
+        canonical_pdfs = sorted(p.name for p in PDF_DIR.glob("MVE_SitRep_*.pdf"))
+        if not canonical_pdfs:
+            pytest.skip("No canonical PDFs found in pdfs/")
+
+        unprocessed = [name for name in canonical_pdfs if name not in processed]
+        assert not unprocessed, (
+            f"{len(unprocessed)} downloaded PDF(s) not yet extracted — "
+            f"run: python3 scripts/extract_sitrep.py --update --pdf-dir pdfs\n"
+            + "\n".join(f"  {name}" for name in unprocessed)
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 5. EXTRACTION SCHEMA TESTS  (format drift detection across all sitreps)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestExtractionSchema:
+    """Catch format changes in new sitreps that would break downstream consumers."""
+
+    def test_master_combined_has_exact_columns(self):
+        if not MASTER_CSV.exists():
+            pytest.skip("master_combined_counts.csv not found")
+        df = pd.read_csv(MASTER_CSV, dtype=str, keep_default_na=False)
+        assert list(df.columns) == COMBINED_COLS, (
+            f"Schema drift in master_combined_counts.csv\n"
+            f"  Expected : {COMBINED_COLS}\n"
+            f"  Got      : {list(df.columns)}"
+        )
+
+    def test_all_sitrep_combined_csvs_have_correct_schema(self):
+        if not SITREPS_DIR.exists():
+            pytest.skip("outputs/sitreps/ not found")
+        bad = []
+        for d in sorted(SITREPS_DIR.iterdir()):
+            csv = d / "combined_counts.csv"
+            if not d.is_dir() or not csv.exists():
+                continue
+            df = pd.read_csv(csv, dtype=str, keep_default_na=False)
+            if list(df.columns) != COMBINED_COLS:
+                bad.append(f"{d.name}: {list(df.columns)}")
+        assert not bad, (
+            f"Schema drift in {len(bad)} sitrep output(s):\n"
+            + "\n".join(f"  {b}" for b in bad)
+        )
+
+    def test_zone_values_not_garbled(self):
+        if not MASTER_CSV.exists():
+            pytest.skip("master_combined_counts.csv not found")
+        df = pd.read_csv(MASTER_CSV, dtype=str, keep_default_na=False)
+        zones = df["zone"][df["zone"].str.strip() != ""]
+        # JSON artifacts, numeric-only values, or escape sequences suggest
+        # extraction failure (Claude returned table structure instead of data).
+        bad = zones[
+            zones.str.match(r'^[\{\[\d"\'\\]') |
+            zones.str.contains(r"\\[ntr]", regex=True) |
+            zones.str.len().gt(60)
+        ]
+        assert len(bad) == 0, (
+            f"Garbled zone values — likely extraction failure:\n"
+            f"{bad.value_counts().to_string()}"
+        )
+
+    def test_dates_in_expected_range(self):
+        if not MASTER_CSV.exists():
+            pytest.skip("master_combined_counts.csv not found")
+        df = pd.read_csv(MASTER_CSV, dtype=str, keep_default_na=False)
+        dates = df.loc[df["count_end_date"] != "", "count_end_date"]
+
+        bad_format = dates[~dates.str.match(r"^\d{2}/\d{2}/\d{4}$")]
+        assert len(bad_format) == 0, (
+            f"Malformed count_end_date values: {bad_format.tolist()}"
+        )
+
+        parsed = pd.to_datetime(dates, format="%d/%m/%Y", errors="coerce")
+        too_early = parsed[parsed < pd.Timestamp("2026-05-01")]
+        assert len(too_early) == 0, (
+            f"{len(too_early)} date(s) before outbreak start (2026-05-01): "
+            f"{too_early.dt.strftime('%d/%m/%Y').tolist()}"
+        )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 6. KRAEMER DIVERGENCE TESTS  (cross-source validation)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Kraemer canonical zone name → extraction zone name (mirrors KRAEMER_NAME_MAP in the qmd)
+_KRAEMER_ZONE_MAP = {"Mongbalu": "Mongbwalu", "Nyakunde": "Nyankunde"}
+
+# Maximum tolerated absolute difference in cumulative confirmed cases per (zone, date) pair.
+_MAX_CONFIRMED_DIVERGENCE = 5
+
+
+class TestKraemerDivergence:
+    """Flag when automated extraction diverges significantly from the Kraemer lab reference data."""
+
+    @pytest.fixture(scope="class")
+    def kraemer_confirmed(self):
+        csv = KRAEMER_LONG / "insp_sitrep__cumulative_confirmed_cases.csv"
+        if not csv.exists():
+            pytest.skip(
+                "Kraemer data not found — run: "
+                "git submodule update --init Ebola_DRC_2026"
+            )
+        df = pd.read_csv(csv, dtype=str)
+        df["zone"]      = df["nom"].map(lambda x: _KRAEMER_ZONE_MAP.get(x, x))
+        df["date"]      = pd.to_datetime(df["date"], errors="coerce")
+        df["confirmed"] = pd.to_numeric(df["cumulative_confirmed_cases"], errors="coerce")
+        return df.dropna(subset=["date", "confirmed"])
+
+    @pytest.fixture(scope="class")
+    def extraction_confirmed(self):
+        if not MASTER_CSV.exists():
+            pytest.skip("master_combined_counts.csv not found — run extract_sitrep.py first")
+        df = pd.read_csv(MASTER_CSV, dtype=str, keep_default_na=False)
+        cum = df[
+            (df["count_type"] == "Cumules") &
+            (df["is_aggregate"].str.upper() != "TRUE") &
+            (df["cases_confirmed"] != "")
+        ].copy()
+        cum["date"]      = pd.to_datetime(cum["count_end_date"], format="%d/%m/%Y", errors="coerce")
+        cum["confirmed"] = pd.to_numeric(cum["cases_confirmed"], errors="coerce")
+        return cum.dropna(subset=["date", "confirmed"])
+
+    def test_kraemer_submodule_has_data(self, kraemer_confirmed):
+        assert len(kraemer_confirmed) > 0, (
+            "Kraemer confirmed cases CSV is empty — submodule may not be initialised"
+        )
+
+    def test_extraction_zones_known_to_kraemer(self, kraemer_confirmed, extraction_confirmed):
+        """Zones present in extraction but absent from Kraemer may indicate a new area
+        or a garbled zone name — emit a warning rather than a hard failure."""
+        import warnings
+        kraemer_zones    = set(kraemer_confirmed["zone"].unique())
+        extraction_zones = set(
+            extraction_confirmed["zone"][extraction_confirmed["zone"].str.strip() != ""].unique()
+        )
+        unknown = extraction_zones - kraemer_zones
+        if unknown:
+            warnings.warn(
+                f"Extraction has zone(s) not (yet) in Kraemer data — "
+                f"may be new outbreak areas or name mismatches: {sorted(unknown)}",
+                UserWarning,
+                stacklevel=2,
+            )
+
+    def test_cumulative_confirmed_within_tolerance(
+        self, kraemer_confirmed, extraction_confirmed
+    ):
+        """For matching (zone, date) pairs, divergence must not exceed the tolerance."""
+        merged = pd.merge(
+            extraction_confirmed[["zone", "date", "confirmed"]].rename(
+                columns={"confirmed": "extraction"}
+            ),
+            kraemer_confirmed[["zone", "date", "confirmed"]].rename(
+                columns={"confirmed": "kraemer"}
+            ),
+            on=["zone", "date"],
+            how="inner",
+        )
+        if merged.empty:
+            pytest.skip(
+                "No overlapping (zone, date) pairs between extraction and Kraemer — "
+                "check that both datasets cover the same date range"
+            )
+
+        merged["delta"] = (merged["extraction"] - merged["kraemer"]).abs()
+        violations = merged[merged["delta"] > _MAX_CONFIRMED_DIVERGENCE].sort_values(
+            "delta", ascending=False
+        )
+        assert violations.empty, (
+            f"{len(violations)} (zone, date) pair(s) exceed the divergence threshold "
+            f"(±{_MAX_CONFIRMED_DIVERGENCE} confirmed cases):\n"
+            + violations.assign(date=violations["date"].dt.strftime("%Y-%m-%d"))[
+                ["zone", "date", "extraction", "kraemer", "delta"]
+            ].to_string(index=False)
+        )
