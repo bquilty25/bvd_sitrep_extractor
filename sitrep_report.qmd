@@ -349,7 +349,6 @@ p1_last <- p1_dat |>
 
 p <- ggplot(p1_dat, aes(x = date, y = count, colour = category, group = category)) +
   geom_line(linewidth = 1.1, na.rm = TRUE) +
-  geom_point(size = 2.8, na.rm = TRUE) +
   geom_label_repel(
     data           = p1_last,
     aes(label      = count),
@@ -430,7 +429,6 @@ p <- zone_ts |>
   mutate(category = factor(category, levels = names(PAL))) |>
   ggplot(aes(x = date, y = count, colour = category, group = category)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
-  geom_point(size = 2.2, na.rm = TRUE) +
   scale_colour_manual(values = PAL) +
   scale_x_date(date_labels = "%d %b", date_breaks = "1 day") +
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.15))) +
@@ -538,17 +536,15 @@ Second, both our data and the Kraemer data show a fall in cumulative confirmed c
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (cummax applied); dotted lines: automated extraction (raw, no cummax); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
   "Automated extraction" = "#0072B2",
-  "Automated (no cummax)" = "#56B4E9",
   "Kraemer lab"          = "#E69F00"
 )
 LTY_COMP <- c(
   "Automated extraction" = "solid",
-  "Automated (no cummax)" = "dotted",
   "Kraemer lab"          = "dashed"
 )
 
@@ -558,17 +554,11 @@ zone_province_lut <- zone_ts |>
 
 our_for_comp <- zone_ts |>
   transmute(zone = as.character(zone), province, date,
-            confirmed, suspected = unconfirmed,
-            deaths_susp, deaths,
-            source = "Automated extraction")
-
-our_raw_for_comp <- zone_ts |>
-  transmute(zone = as.character(zone), province, date,
             confirmed   = confirmed_raw,
             suspected   = unconfirmed_raw,
             deaths_susp = deaths_susp_raw,
             deaths      = deaths_raw,
-            source      = "Automated (no cummax)")
+            source      = "Automated extraction")
 
 # Kraemer deaths_susp = suspected only; deaths = suspected + confirmed (total)
 kraemer_for_comp <- kraemer |>
@@ -577,7 +567,7 @@ kraemer_for_comp <- kraemer |>
             deaths_susp, deaths,
             source)
 
-comp_long <- bind_rows(our_for_comp, our_raw_for_comp, kraemer_for_comp) |>
+comp_long <- bind_rows(our_for_comp, kraemer_for_comp) |>
   pivot_longer(c(confirmed, suspected, deaths_susp, deaths),
                names_to = "metric", values_to = "count") |>
   mutate(
@@ -589,7 +579,7 @@ comp_long <- bind_rows(our_for_comp, our_raw_for_comp, kraemer_for_comp) |>
     ),
     metric   = factor(metric, levels = c("Confirmed cases", "Suspect/probable cases",
                                           "Suspected deaths", "Total deaths (coalesced)")),
-    source   = factor(source, levels = c("Automated extraction", "Automated (no cummax)", "Kraemer lab")),
+    source   = factor(source, levels = c("Automated extraction", "Kraemer lab")),
     province = factor(province, levels = c("Ituri", "Nord-Kivu")),
     zone     = factor(zone, levels = ZONE_LEVELS)
   ) |>
@@ -597,7 +587,7 @@ comp_long <- bind_rows(our_for_comp, our_raw_for_comp, kraemer_for_comp) |>
 
 p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
-  geom_point(size = 2.0, na.rm = TRUE) +
+  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = 2.0, na.rm = TRUE) +
   facet_nested(metric ~ province + zone, scales = "free_y") +
   scale_colour_manual(values = PAL_COMP) +
   scale_linetype_manual(values = LTY_COMP) +
@@ -605,7 +595,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction (with and without cummax) vs Kraemer lab (manual extraction, same source PDFs)",
+    subtitle = "Cumulative counts: automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
@@ -813,7 +803,7 @@ p
 
 ```{r}
 #| label: fig-comparison-contacts
-#| fig-cap: "Cross-source comparison of cumulative contacts traced by health zone. Solid lines: automated extraction (cummax applied); dashed lines: Kraemer lab (manual extraction). ND values excluded."
+#| fig-cap: "Cross-source comparison of cumulative contacts traced by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). ND values excluded."
 #| fig-width: 11
 #| fig-height: 7
 contacts_ours <- df |>
@@ -827,7 +817,6 @@ contacts_ours <- df |>
   filter(!is.na(contacts)) |>
   arrange(zone, date) |>
   group_by(zone) |>
-  mutate(contacts = cummax(contacts)) |>
   ungroup() |>
   transmute(date, zone, contacts, source = "Automated extraction")
 
@@ -848,7 +837,7 @@ contacts_comp <- bind_rows(contacts_ours, contacts_kraemer) |>
 p <- ggplot(contacts_comp,
             aes(x = date, y = contacts, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
-  geom_point(size = 2.0, na.rm = TRUE) +
+  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = 2.0, na.rm = TRUE) +
   facet_nested(~ province + zone, scales = "free_y") +
   scale_colour_manual(values = PAL_COMP[c("Automated extraction","Kraemer lab")]) +
   scale_linetype_manual(values = LTY_COMP[c("Automated extraction","Kraemer lab")]) +
@@ -857,7 +846,7 @@ p <- ggplot(contacts_comp,
                      expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cumulative contacts traced — cross-source validation",
-    subtitle = "Automated extraction (cummax) vs Kraemer lab (manual extraction, same source PDFs)",
+    subtitle = "Automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
     x = NULL, y = "Cumulative contacts traced", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
