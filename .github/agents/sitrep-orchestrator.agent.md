@@ -28,7 +28,7 @@ Run these four stages in order. Each has a dedicated skill — load it for deep 
 |-------|---------|-------|
 | 1. Fetch | `python3 scripts/fetch_sitreps.py` | `sitrep-fetch` |
 | 2. Extract | `python3 scripts/extract_sitrep.py --update --pdf-dir pdfs` | `sitrep-extract` |
-| 3. Kraemer | `git submodule update --remote Ebola_DRC_2026` | `sitrep-kraemer` |
+| 3. Kraemer | `git submodule update --remote Ebola_DRC_2026` | `sitrep-validation` |
 | 4. Render | `quarto render scripts/sitrep_report.qmd` | `sitrep-report` |
 | 5. Deploy | `git add -A && git commit -m "..." && git push` | `sitrep-report` |
 
@@ -64,7 +64,7 @@ git push
 When a stage fails:
 
 1. Read the complete stdout/stderr — do not truncate
-2. Load the matching skill (`sitrep-fetch`, `sitrep-extract`, `sitrep-kraemer`, or `sitrep-report`) and consult its error table
+2. Load the matching skill (`sitrep-fetch`, `sitrep-extract`, `sitrep-validation`, or `sitrep-report`) and consult its error table
 3. Fix the immediate cause (missing env var, missing R package, network issue, etc.)
 4. Re-run from the failed stage only — completed stages do not need to be re-run
 

@@ -1,5 +1,5 @@
 ---
-name: sitrep-kraemer
+name: sitrep-validation
 description: "Update and validate against the Kraemer lab Ebola DRC 2026 reference dataset. Use when: updating the Kraemer submodule before rendering; the cross-source validation section is missing or stale; git submodule errors; understanding which Kraemer files feed the report; interpreting discrepancies between automated extraction and the Kraemer manually-coded data."
 ---
 
