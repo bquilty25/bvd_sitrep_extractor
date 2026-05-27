@@ -96,6 +96,25 @@ PDF archive:
 - `ND` values from source PDFs are stored as blanks.
 - Subtotals/totals are preserved when present in source tables.
 
+## Experimental: GitHub Copilot Agent Mode
+
+> **This feature is experimental.** It requires VS Code with GitHub Copilot and the `agent` chat mode.
+
+The pipeline can be orchestrated end-to-end via a custom GitHub Copilot agent defined in [`.github/agents/sitrep-orchestrator.agent.md`](.github/agents/sitrep-orchestrator.agent.md). The agent calls the same underlying scripts but handles fetch, extract, Kraemer submodule update, render, and deploy autonomously — with reactive error diagnosis at each stage.
+
+**Setup:** no additional installation is required beyond the standard prerequisites above. The agent uses the skills in `.github/skills/` for domain-specific guidance.
+
+**Usage:** open GitHub Copilot Chat in VS Code, switch to **Agent** mode, select `sitrep-orchestrator`, and send a prompt such as:
+
+```
+check for updates
+run full pipeline
+render report
+extract latest sitreps
+```
+
+The agent runs `fetch_sitreps.py`, `extract_sitrep.py --update`, updates the Kraemer submodule, renders the Quarto report, and pushes to `origin/main` — prompting you before any destructive step.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
