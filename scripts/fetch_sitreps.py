@@ -17,6 +17,7 @@ Daily workflow (run both together):
 """
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -165,6 +166,17 @@ def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
     return list(found.values())
 
 
+def _existing_checksums(pdf_dir: Path) -> dict:
+    """Return {md5_hex: filename} for all PDFs already present in pdf_dir."""
+    checksums: dict = {}
+    for p in pdf_dir.glob("*.pdf"):
+        try:
+            checksums[hashlib.md5(p.read_bytes()).hexdigest()] = p.name
+        except OSError:
+            pass
+    return checksums
+
+
 def load_manifest(path: Path) -> dict:
     """Load the download manifest from disk, or return an empty dict."""
     if path.exists():
@@ -225,6 +237,26 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
             counter += 1
     else:
         filename = original_filename
+
+    # Deduplicate by content checksum before writing
+    md5 = hashlib.md5(resp.content).hexdigest()
+    existing = _existing_checksums(pdf_dir)
+    if md5 in existing:
+        duplicate_of = existing[md5]
+        print(f"     Duplicate of {duplicate_of} (same MD5) — skipping.")
+        manifest[url] = {
+            "filename": duplicate_of,
+            "original_filename": original_filename,
+            "sitrep_number": num or "",
+            "canonical_name": duplicate_of,
+            "title": title or _title_from_filename(original_filename),
+            "source_page": source_page,
+            "uploaded_at": uploaded_at,
+            "downloaded_at": datetime.now(timezone.utc).isoformat(),
+            "size_bytes": len(resp.content),
+            "duplicate_of": duplicate_of,
+        }
+        return False, pdf_dir / duplicate_of
 
     dest = pdf_dir / filename
     pdf_dir.mkdir(parents=True, exist_ok=True)
