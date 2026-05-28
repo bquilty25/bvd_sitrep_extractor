@@ -1,0 +1,22 @@
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Aru,4.0,,1.0,1.0,,,0.0
+Ituri,Bambu,6.0,,0.0,2.0,,,244.0
+Ituri,Bunia,249.0,,37.0,48.0,,,404.0
+Ituri,Kilo,8.0,,1.0,2.0,,,41.0
+Ituri,Mongbwalu,339.0,,20.0,88.0,,,222.0
+Ituri,Nizi,6.0,,2.0,2.0,,,220.0
+Ituri,Nyankunde,45.0,,10.0,11.0,,,397.0
+Ituri,Rwampara,228.0,,33.0,69.0,,,697.0
+Ituri,Echantillons sans fiche,0.0,,6.0,0.0,,,0.0
+Ituri,,885.0,,110.0,223.0,,,2225.0
+Nord-Kivu,Butembo,7.0,,5.0,0.0,,,28.0
+Nord-Kivu,Goma,0.0,,1.0,0.0,,,74.0
+Nord-Kivu,Kalunguta,13.0,,2.0,0.0,,,
+Nord-Kivu,Karisimbi,,,,,,,181.0
+Nord-Kivu,Katwa,0.0,,4.0,0.0,,,111.0
+Nord-Kivu,Kyondo,0.0,,0.0,0.0,,,16.0
+Nord-Kivu,Oicha,0.0,,2.0,0.0,,,
+Nord-Kivu,,20.0,,14.0,0.0,,,410.0
+Sud-Kivu,Miti Murhesa,1.0,,1.0,0.0,,,
+Sud-Kivu,,1.0,,1.0,0.0,,,0.0
+,Total,906.0,,125.0,223.0,,17,2635.0

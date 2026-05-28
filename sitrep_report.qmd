@@ -1,7 +1,7 @@
 ---
 title: "Maladie à Virus Ebola — Situation Report Extraction"
 subtitle: "Democratic Republic of Congo"
-author: "Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)"
+author: "Billy J Quilty (Charité Berlin, LSHTM & MSF Epicentre)"
 date: today
 date-format: "DD MMMM YYYY"
 format:
@@ -196,6 +196,10 @@ read_kraemer_long <- function(filename) {
   )
 }
 
+parse_kraemer_date <- function(x) {
+  coalesce(dmy(x, quiet = TRUE), ymd(x, quiet = TRUE))
+}
+
 kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
   rename(confirmed = cumulative_confirmed_cases) |>
   full_join(
@@ -215,7 +219,7 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
   ) |>
   mutate(
     zone       = recode(nom, !!!KRAEMER_NAME_MAP),
-    date       = dmy(date),
+    date       = parse_kraemer_date(date),
     confirmed  = suppressWarnings(as.numeric(confirmed)),
     suspected  = suppressWarnings(as.numeric(suspected)),
     deaths_susp = suppressWarnings(as.numeric(deaths_susp)),
@@ -231,14 +235,14 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
 kraemer_hosp <- read_kraemer_long("insp_sitrep__hospitalised") |>
   mutate(
     zone         = recode(nom, !!!KRAEMER_NAME_MAP),
-    date         = dmy(date),
+    date         = parse_kraemer_date(date),
     hospitalised = suppressWarnings(as.numeric(hospitalised))
   )
 
 kraemer_contacts <- read_kraemer_long("insp_sitrep__cumulative_contacts_traced") |>
   mutate(
     zone            = recode(nom, !!!KRAEMER_NAME_MAP),
-    date            = dmy(date),
+    date            = parse_kraemer_date(date),
     contacts_traced = suppressWarnings(as.numeric(cumulative_contacts_traced))
   ) |>
   filter(!is.na(contacts_traced))
@@ -263,7 +267,7 @@ kraemer_response <- read_kraemer_long("insp_sitrep__hospitalised") |>
   ) |>
   mutate(
     zone   = recode(nom, !!!KRAEMER_NAME_MAP),
-    date   = dmy(date),
+    date   = parse_kraemer_date(date),
     across(c(hospitalised, in_bed_previous_day, total_admissions,
              new_admissions_ppl, new_admissions_other),
            ~suppressWarnings(as.numeric(.x))),
@@ -290,7 +294,7 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
     by = c("nom", "date")
   ) |>
   mutate(
-    date = dmy(date),
+    date = parse_kraemer_date(date),
     across(c(total_passed, total_screened, total_handwashing, total_sensitised),
            ~suppressWarnings(as.numeric(.x)))
   ) |>
@@ -537,6 +541,8 @@ Two issues in the Mongbwalu data are worth noting. First, the early Kraemer data
 
 Second, both our data and the Kraemer data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a correction or reclassification in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the Kraemer series shows the raw figure.
 
+At the right edge of the case-count comparison panels, the automated extraction now extends to 27 May (SitRep 013) while the latest zone-level values in the Kraemer dataset are from 26 May. Any apparent divergence on the final date therefore reflects a one-day coverage gap rather than a methodological disagreement.
+
 ```{r}
 #| label: fig-comparison
 #| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
@@ -697,7 +703,7 @@ poe_ours <- read_csv(
 
 Two points are worth flagging when comparing the response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three sub-columns without explaining what each represents. Both datasets handle this differently, so the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005 and 006 used an earlier table layout that made the in-bed count and new admissions columns harder to distinguish; the two datasets differ slightly on those dates as a result. From 22 May onwards, when the table format was standardised, the datasets are in close agreement.
 
-The Kraemer processed sitrep files currently extend through 24 May for hospital indicators and through 23 May for PoE indicators, so the validation panels below stop earlier than the case-count comparisons and do not yet reflect SitReps 011-012.
+The Kraemer processed sitrep files currently extend through 26 May for hospital indicators and through 26 May for PoE indicators (both updated to build `2026-05-28`), while our automated extraction now covers through 27 May (SitRep 013). The validation panels therefore overlap fully through 26 May; any gap at the right edge of those panels reflects a one-day coverage difference rather than a methodological discrepancy.
 
 ```{r}
 #| label: fig-comparison-response
@@ -796,7 +802,7 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
                      expand = expansion(mult = c(0, 0.12))) +
   labs(
     title    = "MVE DRC \u2014 POE screening — cross-source validation",
-    subtitle = "Daily aggregate totals: automated extraction vs Kraemer lab (sum across checkpoints)",
+    subtitle = "Daily aggregate totals: automated extraction vs Kraemer lab (sum across checkpoints; Kraemer extends to 26 May)",
     x = NULL, y = "Count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
