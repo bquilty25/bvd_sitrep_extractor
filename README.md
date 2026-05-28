@@ -8,7 +8,7 @@ Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude,
 
 *Figure: Cross-source validation of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone, comparing automated extraction with Kraemer Lab manual extraction.*
 
-Author: Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)
+Author: Billy J Quilty (Charité Berlin, LSHTM & MSF Epicentre)
 
 ## Quick Start
 
