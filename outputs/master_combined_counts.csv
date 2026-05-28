@@ -1,5 +1,6 @@
 ﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
-12/05/2026,12/05/2026,Nouveaux,70.0,0.0,19,,,3.0,342.0,,,MVE_SitRep_007_2026-05-22,FALSE
+12/05/2026,12/05/2026,Nouveaux,70.0,0.0,18,,,2.0,342.0,,Ituri,MVE_SitRep_007_2026-05-22,TRUE
+12/05/2026,12/05/2026,Nouveaux,70.0,0.0,19,,,3.0,342.0,,,MVE_SitRep_007_2026-05-22,TRUE
 12/05/2026,12/05/2026,Nouveaux,0.0,,0,,,0.0,48.0,Bambu,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 12/05/2026,12/05/2026,Nouveaux,41.0,,6,,,1.0,87.0,Bunia,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 12/05/2026,12/05/2026,Nouveaux,,,0,,,0.0,,Butembo,Nord-Kivu,MVE_SitRep_007_2026-05-22,FALSE
@@ -28,7 +29,9 @@
 ,19/05/2026,Cumules,19.0,,4,5.0,,,133.0,Nyankunde,Ituri,MVE_SitRep_005_2026-05-20,FALSE
 ,19/05/2026,Cumules,154.0,,25,43.0,,,335.0,Rwampara,Ituri,MVE_SitRep_005_2026-05-20,FALSE
 ,19/05/2026,Cumules,575.0,,51,148.0,,,847.0,Total,,MVE_SitRep_005_2026-05-20,TRUE
+20/05/2026,20/05/2026,Nouveaux,,,18,,,,,,Ituri,MVE_SitRep_004_2026-05-20,TRUE
 20/05/2026,20/05/2026,Nouveaux,,,2,,,,,,Nord-Kivu,MVE_SitRep_004_2026-05-20,TRUE
+20/05/2026,20/05/2026,Nouveaux,59.0,0.0,16,,,0.0,306.0,,Ituri,MVE_SitRep_005_2026-05-20,TRUE
 20/05/2026,20/05/2026,Nouveaux,0.0,0.0,0,,,0.0,0.0,,Nord-Kivu,MVE_SitRep_005_2026-05-20,TRUE
 20/05/2026,20/05/2026,Nouveaux,29.0,,0,,,0.0,76.0,Bunia,Ituri,MVE_SitRep_005_2026-05-20,FALSE
 20/05/2026,20/05/2026,Nouveaux,,,0,,,0.0,,Butembo,Nord-Kivu,MVE_SitRep_005_2026-05-20,FALSE
@@ -38,7 +41,7 @@
 20/05/2026,20/05/2026,Nouveaux,5.0,,0,,,0.0,0.0,Nyankunde,Ituri,MVE_SitRep_005_2026-05-20,FALSE
 20/05/2026,20/05/2026,Nouveaux,18.0,,4,,,0.0,215.0,Rwampara,Ituri,MVE_SitRep_005_2026-05-20,FALSE
 20/05/2026,20/05/2026,Nouveaux,59.0,0.0,16,,,0.0,306.0,Total,,MVE_SitRep_005_2026-05-20,TRUE
-,20/05/2026,Cumules,671.0,,61,160.0,,,1261.0,,,MVE_SitRep_006_2026-05-21,FALSE
+,20/05/2026,Cumules,671.0,,61,160.0,,,1261.0,,,MVE_SitRep_006_2026-05-21,TRUE
 ,20/05/2026,Cumules,2.0,,1,0.0,,,128.0,Bambu,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 ,20/05/2026,Cumules,125.0,,11,31.0,,,203.0,Bunia,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 ,20/05/2026,Cumules,7.0,,1,0.0,,,,Butembo,Nord-Kivu,MVE_SitRep_006_2026-05-21,FALSE
@@ -48,7 +51,9 @@
 ,20/05/2026,Cumules,317.0,,13,80.0,,,176.0,Mongbwalu,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 ,20/05/2026,Cumules,28.0,,5,5.0,,,133.0,Nyankunde,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 ,20/05/2026,Cumules,179.0,,24,44.0,,,621.0,Rwampara,Ituri,MVE_SitRep_006_2026-05-21,FALSE
-21/05/2026,21/05/2026,Nouveaux,78.0,0.0,13,,,0.0,414.0,,,MVE_SitRep_006_2026-05-21,FALSE
+21/05/2026,21/05/2026,Nouveaux,78.0,0.0,12,,,0.0,414.0,,Ituri,MVE_SitRep_006_2026-05-21,TRUE
+21/05/2026,21/05/2026,Nouveaux,0.0,0.0,1,,,0.0,0.0,,Nord-Kivu,MVE_SitRep_006_2026-05-21,TRUE
+21/05/2026,21/05/2026,Nouveaux,78.0,0.0,13,,,0.0,414.0,,,MVE_SitRep_006_2026-05-21,TRUE
 21/05/2026,21/05/2026,Nouveaux,1.0,0.0,1,,,0.0,128.0,Bambu,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 21/05/2026,21/05/2026,Nouveaux,35.0,0.0,5,,,0.0,0.0,Bunia,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 21/05/2026,21/05/2026,Nouveaux,,0.0,0,,,0.0,,Butembo,Nord-Kivu,MVE_SitRep_006_2026-05-21,FALSE
@@ -57,7 +62,7 @@
 21/05/2026,21/05/2026,Nouveaux,8.0,0.0,0,,,0.0,0.0,Mongbwalu,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 21/05/2026,21/05/2026,Nouveaux,9.0,0.0,3,,,0.0,0.0,Nyankunde,Ituri,MVE_SitRep_006_2026-05-21,FALSE
 21/05/2026,21/05/2026,Nouveaux,25.0,0.0,3,,,0.0,286.0,Rwampara,Ituri,MVE_SitRep_006_2026-05-21,FALSE
-,21/05/2026,Cumules,746.0,,83,,176.0,,1603.0,,,MVE_SitRep_007_2026-05-22,FALSE
+,21/05/2026,Cumules,746.0,,83,,176.0,,1603.0,,,MVE_SitRep_007_2026-05-22,TRUE
 ,21/05/2026,Cumules,2.0,,1,,0.0,,176.0,Bambu,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 ,21/05/2026,Cumules,166.0,,15,,34.0,,290.0,Bunia,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 ,21/05/2026,Cumules,7.0,,1,,0.0,,,Butembo,Nord-Kivu,MVE_SitRep_007_2026-05-22,FALSE
@@ -70,6 +75,7 @@
 ,21/05/2026,Cumules,3.0,,1,,1.0,,,Nizi,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 ,21/05/2026,Cumules,38.0,,11,,6.0,,340.0,Nyankunde,Ituri,MVE_SitRep_007_2026-05-22,FALSE
 ,21/05/2026,Cumules,193.0,,31,,51.0,,621.0,Rwampara,Ituri,MVE_SitRep_007_2026-05-22,FALSE
+22/05/2026,22/05/2026,Nouveaux,70.0,0.0,18,,,2.0,342.0,,Ituri,MVE_SitRep_008_2026-05-23,TRUE
 22/05/2026,22/05/2026,Nouveaux,0.0,0.0,1,,,1.0,0.0,,Sud-Kivu,MVE_SitRep_008_2026-05-23,TRUE
 22/05/2026,22/05/2026,Nouveaux,2.0,,0,,,0.0,48.0,Bambu,Ituri,MVE_SitRep_008_2026-05-23,FALSE
 22/05/2026,22/05/2026,Nouveaux,32.0,,6,,,1.0,87.0,Bunia,Ituri,MVE_SitRep_008_2026-05-23,FALSE
@@ -96,7 +102,8 @@
 ,22/05/2026,Cumules,45.0,,9,,8.0,,365.0,Nyankunde,Ituri,MVE_SitRep_008_2026-05-23,FALSE
 ,22/05/2026,Cumules,221.0,,32,,63.0,,621.0,Rwampara,Ituri,MVE_SitRep_008_2026-05-23,FALSE
 ,22/05/2026,Cumules,867.0,,91,,204.0,,1674.0,Total,,MVE_SitRep_008_2026-05-23,TRUE
-23/05/2026,23/05/2026,Nouveaux,33.0,0.0,10,,,0.0,50.0,,,MVE_SitRep_009_2026-05-24,FALSE
+23/05/2026,23/05/2026,Nouveaux,33.0,0.0,9,,,0.0,50.0,,Ituri,MVE_SitRep_009_2026-05-24,TRUE
+23/05/2026,23/05/2026,Nouveaux,33.0,0.0,10,,,0.0,50.0,,,MVE_SitRep_009_2026-05-24,TRUE
 23/05/2026,23/05/2026,Nouveaux,,0.0,0,,,0.0,,Bambu,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 23/05/2026,23/05/2026,Nouveaux,22.0,0.0,0,,,0.0,43.0,Bunia,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 23/05/2026,23/05/2026,Nouveaux,,0.0,0,,,0.0,,Butembo,Nord-Kivu,MVE_SitRep_009_2026-05-24,FALSE
@@ -108,7 +115,7 @@
 23/05/2026,23/05/2026,Nouveaux,0.0,0.0,0,,,0.0,7.0,Nizi,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 23/05/2026,23/05/2026,Nouveaux,,0.0,0,,,0.0,0.0,Nyankunde,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 23/05/2026,23/05/2026,Nouveaux,3.0,0.0,0,,,0.0,0.0,Rwampara,Ituri,MVE_SitRep_009_2026-05-24,FALSE
-,23/05/2026,Cumules,904.0,,101,119.0,,,1817.0,,,MVE_SitRep_009_2026-05-24,FALSE
+,23/05/2026,Cumules,904.0,,101,119.0,,,1817.0,,,MVE_SitRep_009_2026-05-24,TRUE
 ,23/05/2026,Cumules,4.0,,1,1.0,,,0.0,Aru,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 ,23/05/2026,Cumules,6.0,,0,2.0,,,183.0,Bambu,Ituri,MVE_SitRep_009_2026-05-24,FALSE
 ,23/05/2026,Cumules,249.0,,24,48.0,,,404.0,Bunia,Ituri,MVE_SitRep_009_2026-05-24,FALSE
@@ -174,5 +181,10 @@
 ,25/05/2026,Cumules,,,1,0,,,0,Oicha,Nord-Kivu,MVE_SitRep_011_2026-05-27,FALSE
 ,25/05/2026,Cumules,240,,32,75,,,621,Rwampara,Ituri,MVE_SitRep_011_2026-05-27,FALSE
 ,25/05/2026,Cumules,998,,106,238,,12,2231,Total,,MVE_SitRep_011_2026-05-27,TRUE
-,26/05/2026,Nouveaux,,,16,,,,,,,MVE_SitRep_012_2026-05-27_v2,FALSE
+,26/05/2026,Nouveaux,,,16,,,,,,Ituri,MVE_SitRep_012_2026-05-27,TRUE
+,26/05/2026,Nouveaux,,,16,,,,,,,MVE_SitRep_012_2026-05-27_v2,TRUE
+,26/05/2026,Cumules,1077,,121,238,,17,,,,MVE_SitRep_012_2026-05-27,TRUE
+,26/05/2026,Cumules,,,110,,,,,,Ituri,MVE_SitRep_012_2026-05-27_v2,TRUE
+,26/05/2026,Cumules,,,10,,,,,,Nord-Kivu,MVE_SitRep_012_2026-05-27_v2,TRUE
+,26/05/2026,Cumules,,,1,,,,,,Sud-Kivu,MVE_SitRep_012_2026-05-27_v2,TRUE
 ,26/05/2026,Cumules,1077,,121,246,,17,,,Total,MVE_SitRep_012_2026-05-27_v2,TRUE

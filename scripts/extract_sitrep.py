@@ -105,6 +105,9 @@ def _is_aggregate(zone: str, province: str) -> str:
     # These rows represent province-level summaries (not individual health zones).
     if not z and p:
         return "TRUE"
+    # National-level aggregate rows sometimes arrive with both fields blank.
+    if not z and not p:
+        return "TRUE"
     return "FALSE"
 
 
@@ -798,8 +801,8 @@ def _run_rebuild(output_dir: Path) -> None:
 
     master_df = _sort_master(
         _dedupe_latest_revision(
-            pd.concat(combined_dfs, ignore_index=True),
-            subset=["count_type", "zone", "count_end_date"],
+            _normalise_combined_master(pd.concat(combined_dfs, ignore_index=True)),
+            subset=["count_type", "count_start_date", "count_end_date", "zone", "province"],
         )
     )
     master_path = output_dir / "master_combined_counts.csv"
@@ -809,7 +812,7 @@ def _run_rebuild(output_dir: Path) -> None:
     if response_dfs:
         resp_df = _dedupe_latest_revision(
             pd.concat(response_dfs, ignore_index=True),
-            subset=["date", "zone"],
+            subset=["date", "zone", "province"],
         )
         resp_path = output_dir / "master_response_counts.csv"
         resp_df.to_csv(resp_path, index=False, encoding="utf-8-sig")
@@ -839,6 +842,19 @@ def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
         na_position="last",
     )
     return tmp.drop(columns=["_sort_date", "_type_order"]).reset_index(drop=True)
+
+
+def _normalise_combined_master(df: pd.DataFrame) -> pd.DataFrame:
+    """Recompute aggregate flags for combined-count rows before deduping/writing."""
+    if df.empty:
+        return df
+    tmp = df.copy()
+    if {"zone", "province"}.issubset(tmp.columns):
+        tmp["is_aggregate"] = tmp.apply(
+            lambda row: _is_aggregate(row.get("zone", ""), row.get("province", "")),
+            axis=1,
+        )
+    return tmp
 
 
 def _sitrep_series_key(source: str) -> str:
@@ -877,9 +893,10 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
         master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
     else:
         master = new_df.copy()
+    master = _normalise_combined_master(master)
     master = _dedupe_latest_revision(
         master,
-        subset=["count_type", "zone", "count_end_date"],
+        subset=["count_type", "count_start_date", "count_end_date", "zone", "province"],
     )
     master = _sort_master(master)
     output_dir.mkdir(parents=True, exist_ok=True)

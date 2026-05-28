@@ -25,7 +25,7 @@ from extract_sitrep import (
     clean_json_text, build_dataframe, coerce_numerics,
     parse_french_date, extract_date_from_filename, build_combined_counts, _nd,
     COMBINED_COLS, normalise_zone, _row_has_data,
-    _sitrep_series_key, _sitrep_revision, _dedupe_latest_revision,
+    _sitrep_series_key, _sitrep_revision, _dedupe_latest_revision, _is_aggregate,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -199,6 +199,41 @@ class TestSitrepRevisionHandling:
         assert len(result) == 1
         assert result.iloc[0]["sitrep_source"] == "MVE_SitRep_012_2026-05-27_v2"
         assert result.iloc[0]["cases_confirmed"] == "121"
+
+    def test_dedupe_latest_revision_preserves_distinct_province_aggregates(self):
+        df = pd.DataFrame([
+            {
+                "count_type": "Nouveaux",
+                "count_start_date": "21/05/2026",
+                "count_end_date": "21/05/2026",
+                "zone": "",
+                "province": "Ituri",
+                "sitrep_source": "MVE_SitRep_006_2026-05-21",
+                "cases_confirmed": "12",
+            },
+            {
+                "count_type": "Nouveaux",
+                "count_start_date": "21/05/2026",
+                "count_end_date": "21/05/2026",
+                "zone": "",
+                "province": "",
+                "sitrep_source": "MVE_SitRep_006_2026-05-21",
+                "cases_confirmed": "13",
+            },
+        ])
+
+        result = _dedupe_latest_revision(
+            df,
+            subset=["count_type", "count_start_date", "count_end_date", "zone", "province"],
+        )
+
+        assert len(result) == 2
+        assert set(result["cases_confirmed"]) == {"12", "13"}
+
+
+class TestAggregateDetection:
+    def test_blank_zone_and_province_is_aggregate(self):
+        assert _is_aggregate("", "") == "TRUE"
 
 
 class TestNdHelper:
