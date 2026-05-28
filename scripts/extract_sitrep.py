@@ -797,26 +797,28 @@ def _run_rebuild(output_dir: Path) -> None:
                  f"{sitreps_dir}")
 
     master_df = _sort_master(
-        pd.concat(combined_dfs, ignore_index=True)
-        .drop_duplicates(subset=["count_type", "sitrep_source", "zone", "count_end_date"])
+        _dedupe_latest_revision(
+            pd.concat(combined_dfs, ignore_index=True),
+            subset=["count_type", "zone", "count_end_date"],
+        )
     )
     master_path = output_dir / "master_combined_counts.csv"
     master_df.to_csv(master_path, index=False, encoding="utf-8-sig")
     print(f"  master_combined_counts.csv   →  {len(master_df)} rows")
 
     if response_dfs:
-        resp_df = (
-            pd.concat(response_dfs, ignore_index=True)
-            .drop_duplicates(subset=["date", "zone", "sitrep_source"])
+        resp_df = _dedupe_latest_revision(
+            pd.concat(response_dfs, ignore_index=True),
+            subset=["date", "zone"],
         )
         resp_path = output_dir / "master_response_counts.csv"
         resp_df.to_csv(resp_path, index=False, encoding="utf-8-sig")
         print(f"  master_response_counts.csv   →  {len(resp_df)} rows")
 
     if poe_dfs:
-        poe_all = (
-            pd.concat(poe_dfs, ignore_index=True)
-            .drop_duplicates(subset=["date", "sitrep_source"])
+        poe_all = _dedupe_latest_revision(
+            pd.concat(poe_dfs, ignore_index=True),
+            subset=["date"],
         )
         poe_path = output_dir / "master_poe_counts.csv"
         poe_all.to_csv(poe_path, index=False, encoding="utf-8-sig")
@@ -839,6 +841,34 @@ def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
     return tmp.drop(columns=["_sort_date", "_type_order"]).reset_index(drop=True)
 
 
+def _sitrep_series_key(source: str) -> str:
+    """Return the base sitrep stem, collapsing revision suffixes like _v2."""
+    return re.sub(r"_v\d+$", "", str(source or "").strip(), flags=re.IGNORECASE)
+
+
+def _sitrep_revision(source: str) -> int:
+    """Return the numeric revision for a sitrep stem; unsuffixed names are revision 1."""
+    m = re.search(r"_v(\d+)$", str(source or "").strip(), flags=re.IGNORECASE)
+    return int(m.group(1)) if m else 1
+
+
+def _dedupe_latest_revision(
+    df: pd.DataFrame,
+    subset: list[str],
+    source_col: str = "sitrep_source",
+) -> pd.DataFrame:
+    """Deduplicate by logical sitrep identity, keeping the highest revision for each key."""
+    if df.empty or source_col not in df.columns:
+        return df
+
+    tmp = df.copy()
+    tmp["_series_key"] = tmp[source_col].map(_sitrep_series_key)
+    tmp["_revision"] = tmp[source_col].map(_sitrep_revision)
+    tmp = tmp.sort_values(["_series_key", "_revision", source_col], kind="stable")
+    tmp = tmp.drop_duplicates(subset=[*subset, "_series_key"], keep="last")
+    return tmp.drop(columns=["_series_key", "_revision"]).reset_index(drop=True)
+
+
 def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
     """Append rows to master_combined_counts.csv; return the full updated DataFrame."""
     master_path = output_dir / "master_combined_counts.csv"
@@ -847,7 +877,10 @@ def append_to_master(new_df: pd.DataFrame, output_dir: Path) -> pd.DataFrame:
         master = pd.concat([existing, new_df.astype(str).fillna("")], ignore_index=True)
     else:
         master = new_df.copy()
-    master = master.drop_duplicates(subset=["count_type", "sitrep_source", "zone", "count_end_date"])
+    master = _dedupe_latest_revision(
+        master,
+        subset=["count_type", "zone", "count_end_date"],
+    )
     master = _sort_master(master)
     output_dir.mkdir(parents=True, exist_ok=True)
     master.to_csv(master_path, index=False, encoding="utf-8-sig")
@@ -866,7 +899,12 @@ def append_to_master_generic(
     else:
         master = new_df.copy()
     if dedup_subset:
-        master = master.drop_duplicates(subset=dedup_subset)
+        source_col = "sitrep_source" if "sitrep_source" in dedup_subset else None
+        if source_col:
+            subset_wo_source = [col for col in dedup_subset if col != source_col]
+            master = _dedupe_latest_revision(master, subset=subset_wo_source, source_col=source_col)
+        else:
+            master = master.drop_duplicates(subset=dedup_subset)
     master_path.parent.mkdir(parents=True, exist_ok=True)
     master.to_csv(master_path, index=False, encoding="utf-8-sig")
     return master

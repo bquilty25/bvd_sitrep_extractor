@@ -25,6 +25,7 @@ from extract_sitrep import (
     clean_json_text, build_dataframe, coerce_numerics,
     parse_french_date, extract_date_from_filename, build_combined_counts, _nd,
     COMBINED_COLS, normalise_zone, _row_has_data,
+    _sitrep_series_key, _sitrep_revision, _dedupe_latest_revision,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -160,6 +161,44 @@ class TestExtractDateFromFilename:
 
     def test_no_date_returns_empty(self):
         assert extract_date_from_filename(Path("no_date.pdf")) == ""
+
+
+class TestSitrepRevisionHandling:
+    def test_series_key_strips_revision_suffix(self):
+        assert _sitrep_series_key("MVE_SitRep_012_2026-05-27_v2") == "MVE_SitRep_012_2026-05-27"
+
+    def test_revision_defaults_to_one(self):
+        assert _sitrep_revision("MVE_SitRep_012_2026-05-27") == 1
+
+    def test_revision_suffix_is_parsed(self):
+        assert _sitrep_revision("MVE_SitRep_012_2026-05-27_v2") == 2
+
+    def test_dedupe_latest_revision_keeps_newer_source(self):
+        df = pd.DataFrame([
+            {
+                "count_type": "Cumules",
+                "zone": "Total",
+                "count_end_date": "26/05/2026",
+                "sitrep_source": "MVE_SitRep_012_2026-05-27",
+                "cases_confirmed": "110",
+            },
+            {
+                "count_type": "Cumules",
+                "zone": "Total",
+                "count_end_date": "26/05/2026",
+                "sitrep_source": "MVE_SitRep_012_2026-05-27_v2",
+                "cases_confirmed": "121",
+            },
+        ])
+
+        result = _dedupe_latest_revision(
+            df,
+            subset=["count_type", "zone", "count_end_date"],
+        )
+
+        assert len(result) == 1
+        assert result.iloc[0]["sitrep_source"] == "MVE_SitRep_012_2026-05-27_v2"
+        assert result.iloc[0]["cases_confirmed"] == "121"
 
 
 class TestNdHelper:

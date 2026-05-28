@@ -215,7 +215,7 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
   ) |>
   mutate(
     zone       = recode(nom, !!!KRAEMER_NAME_MAP),
-    date       = as.Date(date),
+    date       = dmy(date),
     confirmed  = suppressWarnings(as.numeric(confirmed)),
     suspected  = suppressWarnings(as.numeric(suspected)),
     deaths_susp = suppressWarnings(as.numeric(deaths_susp)),
@@ -231,14 +231,14 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
 kraemer_hosp <- read_kraemer_long("insp_sitrep__hospitalised") |>
   mutate(
     zone         = recode(nom, !!!KRAEMER_NAME_MAP),
-    date         = as.Date(date),
+    date         = dmy(date),
     hospitalised = suppressWarnings(as.numeric(hospitalised))
   )
 
 kraemer_contacts <- read_kraemer_long("insp_sitrep__cumulative_contacts_traced") |>
   mutate(
     zone            = recode(nom, !!!KRAEMER_NAME_MAP),
-    date            = as.Date(date),
+    date            = dmy(date),
     contacts_traced = suppressWarnings(as.numeric(cumulative_contacts_traced))
   ) |>
   filter(!is.na(contacts_traced))
@@ -263,7 +263,7 @@ kraemer_response <- read_kraemer_long("insp_sitrep__hospitalised") |>
   ) |>
   mutate(
     zone   = recode(nom, !!!KRAEMER_NAME_MAP),
-    date   = as.Date(date),
+    date   = dmy(date),
     across(c(hospitalised, in_bed_previous_day, total_admissions,
              new_admissions_ppl, new_admissions_other),
            ~suppressWarnings(as.numeric(.x))),
@@ -290,7 +290,7 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
     by = c("nom", "date")
   ) |>
   mutate(
-    date = as.Date(date),
+    date = dmy(date),
     across(c(total_passed, total_screened, total_handwashing, total_sensitised),
            ~suppressWarnings(as.numeric(.x)))
   ) |>
@@ -612,7 +612,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
     panel.spacing   = unit(0.6, "lines")
   )
 ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 14, dpi = 300)
-p
+knitr::include_graphics(here("outputs", "plots", "fig-comparison.png"))
 ```
 
 Table 2 presents numerical differences at the most recent date available in each source for each zone.
@@ -760,7 +760,7 @@ p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = sour
   )
 ggsave(here("outputs", "plots", "fig-comparison-response.png"), plot = p,
        width = 12, height = 9, dpi = 300)
-p
+knitr::include_graphics(here("outputs", "plots", "fig-comparison-response.png"))
 ```
 
 ```{r}
@@ -808,7 +808,7 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
   )
 ggsave(here("outputs", "plots", "fig-comparison-poe.png"), plot = p,
        width = 9, height = 6, dpi = 300)
-p
+knitr::include_graphics(here("outputs", "plots", "fig-comparison-poe.png"))
 ```
 
 ```{r}
@@ -869,7 +869,7 @@ p <- ggplot(contacts_comp,
   )
 ggsave(here("outputs", "plots", "fig-comparison-contacts.png"), plot = p,
        width = 11, height = 7, dpi = 300)
-p
+knitr::include_graphics(here("outputs", "plots", "fig-comparison-contacts.png"))
 ```
 
 ## Discussion
