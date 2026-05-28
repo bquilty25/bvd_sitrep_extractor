@@ -4,6 +4,10 @@
 
 Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/sitrep_report.html#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
 
+![Cross-source validation figure](outputs/plots/fig-comparison.png)
+
+*Figure: Cross-source validation of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone, comparing automated extraction with Kraemer Lab manual extraction.*
+
 Author: Billy J Quilty (Charite Berlin, LSHTM & MSF Epicentre)
 
 ## Quick Start
