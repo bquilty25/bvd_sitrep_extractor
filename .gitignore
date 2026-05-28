@@ -29,3 +29,4 @@ outputs/cumulative_counts.csv
 outputs/new_cases_counts.csv
 outputs/poe_counts.csv
 outputs/raw_extraction.json
+.Rproj.user
