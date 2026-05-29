@@ -215,7 +215,7 @@ n_provinces  <- n_distinct(zone_ts$province)
 
 ```{r}
 #| label: load-kraemer
-# Kraemer lab canonical name → this extraction zone name
+# INRB-UMIE canonical name → this extraction zone name
 KRAEMER_NAME_MAP <- c("Mongbalu" = "Mongbwalu", "Nyakunde" = "Nyankunde")
 
 read_kraemer_long <- function(filename) {
@@ -260,7 +260,7 @@ kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
     # Total deaths = suspected + confirmed (mirrors our coalesce logic)
     deaths     = coalesce(deaths_susp, 0) + coalesce(deaths_conf, 0),
     deaths     = if_else(is.na(deaths_susp) & is.na(deaths_conf), NA_real_, deaths),
-    source     = "Kraemer lab"
+    source     = "INRB-UMIE"
   ) |>
   select(zone, date, confirmed, suspected, deaths_susp, deaths_conf, deaths, source) |>
   filter(zone %in% ZONE_LEVELS)
@@ -304,11 +304,11 @@ kraemer_response <- read_kraemer_long("insp_sitrep__hospitalised") |>
     across(c(hospitalised, in_bed_previous_day, total_admissions,
              new_admissions_ppl, new_admissions_other),
            ~suppressWarnings(as.numeric(.x))),
-    source = "Kraemer lab"
+    source = "INRB-UMIE"
   ) |>
   filter(zone %in% ZONE_LEVELS)
 
-# POE (checkpoint-level in Kraemer; summed to daily aggregate for comparison)
+# POE (checkpoint-level in INRB-UMIE; summed to daily aggregate for comparison)
 kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
   rename(total_passed = total_poe_passed) |>
   full_join(
@@ -337,7 +337,7 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
            ~sum(.x, na.rm = TRUE)),
     .groups = "drop"
   ) |>
-  mutate(source = "Kraemer lab")
+  mutate(source = "INRB-UMIE")
 ```
 
 ```{r}
@@ -358,7 +358,7 @@ bvd_ref <- read_csv(
   ) |>
   transmute(date, bvd_sitrep, bvd_suspected, bvd_confirmed, bvd_deaths, bvd_notes = notes)
 
-# Kraemer national totals (single snapshot: 27 May 2026)
+# INRB-UMIE national totals (single snapshot: 27 May 2026)
 read_kraemer_national_snapshot <- function(filename, value_col) {
   read_kraemer_long(filename) |>
     rename(value = all_of(value_col)) |>
@@ -447,7 +447,7 @@ This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic 
 
 ### Data sources
 
-Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by the Kraemer lab (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The Kraemer lab series, produced by manual data entry, was used as an independent check on our automated extraction.
+Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by INRB-UMIE (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The INRB-UMIE series, produced by manual data entry, was used as an independent check on our automated extraction.
 
 ### Automated PDF extraction
 
@@ -665,32 +665,32 @@ bind_rows(zone_latest, total_row) |>
 
 ### Cross-source validation
 
-We checked our automated extraction against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) manually coded dataset. For SitReps 1–11, both datasets work from the same PDF files, so any differences between them reflect how the tables were read rather than which documents were used. From SitRep 12 onwards, the Kraemer lab received health-zone tables directly from INRB via WhatsApp; these may not correspond exactly to the figures published in each PDF. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
+We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset. For SitReps 1–11, both datasets work from the same PDF files, so any differences between them reflect how the tables were read rather than which documents were used. From SitRep 12 onwards, INRB-UMIE received health-zone tables directly from INRB via WhatsApp; these may not correspond exactly to the figures published in each PDF. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
 
-#### National-level comparison — this repo, BVDOutbreakSize, and Kraemer lab
+#### National-level comparison — this repo, BVDOutbreakSize, and INRB-UMIE
 
 At the national level, cumulative suspected and confirmed case counts agree exactly across all three sources for every date in the overlap period. The only divergences are in the deaths series.
 
-From SitRep 10 onwards, INSP's front-page banner figures and the per-health-zone sub-tables frequently report different national totals. The Kraemer lab tracks both separately: files named `national_*` contain the banner figures, which represent INSP's official national position; files without `national` in the name contain the zone-level sub-table values. This repo also reads from the front-page banner. BVDOutbreakSize, by contrast, derives national totals by summing the per-zone rows. The disagreement between these approaches therefore reflects a structural feature of the source documents — INSP's own banner and sub-tables often disagree — rather than an error in either dataset.
+From SitRep 10 onwards, INSP's front-page banner figures and the per-health-zone sub-tables frequently report different national totals. INRB-UMIE tracks both separately: files named `national_*` contain the banner figures, which represent INSP's official national position; files without `national` in the name contain the zone-level sub-table values. This repo also reads from the front-page banner. BVDOutbreakSize, by contrast, derives national totals by summing the per-zone rows. The disagreement between these approaches therefore reflects a structural feature of the source documents — INSP's own banner and sub-tables often disagree — rather than an error in either dataset.
 
-On 23 May (SitRep 009), this repo and the Kraemer national figure both record 119 suspected deaths, matching the front-page banner. [BVDOutbreakSize](https://github.com/epiforecasts/BVDOutbreakSize/pull/140) (PR \#140) records 220, which is the per-zone row sum. Both values are internally consistent with their respective source tables. On 26 May (SitRep 012), both a first and a revised version of the PDF were processed. The original extraction (SitRep\_012) records 238 deaths (matching BVDOutbreakSize), while the revised extraction (SitRep\_012\_v2) records 246 deaths; there was no per-zone case table in this report against which to cross-check the banner figure. The Kraemer lab national snapshot currently covers 27 May only (back-filling to SitRep 10 is in progress); on that date their banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths, consistent with this repo.
+On 23 May (SitRep 009), this repo and the INRB-UMIE national figure both record 119 suspected deaths, matching the front-page banner. [BVDOutbreakSize](https://github.com/epiforecasts/BVDOutbreakSize/pull/140) (PR \#140) records 220, which is the per-zone row sum. Both values are internally consistent with their respective source tables. On 26 May (SitRep 012), both a first and a revised version of the PDF were processed. The original extraction (SitRep\_012) records 238 deaths (matching BVDOutbreakSize), while the revised extraction (SitRep\_012\_v2) records 246 deaths; there was no per-zone case table in this report against which to cross-check the banner figure. The INRB-UMIE national snapshot currently covers 27 May only (back-filling to SitRep 10 is in progress); on that date their banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths, consistent with this repo.
 
 ```{r}
 #| label: tbl-national-comparison
-#| tbl-cap: "National cumulative totals — cross-source comparison. Shading indicates values that differ across sources. BVD: BVDOutbreakSize (epiforecasts/BVDOutbreakSize PR \\#140); Kraemer: kraemer-lab/Ebola\_DRC\_2026. A dash indicates no data available from that source for that date."
+#| tbl-cap: "National cumulative totals — cross-source comparison. Shading indicates values that differ across sources. BVD: BVDOutbreakSize (epiforecasts/BVDOutbreakSize PR \\#140); INRB-UMIE: INRB-UMIE/Ebola\_DRC\_2026. A dash indicates no data available from that source for that date."
 nat_comparison |>
   transmute(
     Date                     = format(date, "%d %b"),
     `Suspect. (ours)`        = ours_suspected,
     `Suspect. (BVD)`         = bvd_suspected,
-    `Suspect. (Kraemer)`     = kraemer_suspected,
-    `Confirmed (ours)`       = ours_confirmed,
-    `Confirmed (BVD)`        = bvd_confirmed,
-    `Confirmed (Kraemer)`    = kraemer_confirmed,
-    `Deaths (ours)`          = ours_deaths,
-    `Deaths (BVD)`           = bvd_deaths,
-    `Deaths susp. (Kraemer)` = kraemer_susp_deaths,
-    `Deaths conf. (Kraemer)` = kraemer_conf_deaths
+    `Suspect. (INRB-UMIE)`     = kraemer_suspected,
+    `Confirmed (ours)`           = ours_confirmed,
+    `Confirmed (BVD)`            = bvd_confirmed,
+    `Confirmed (INRB-UMIE)`      = kraemer_confirmed,
+    `Deaths (ours)`              = ours_deaths,
+    `Deaths (BVD)`               = bvd_deaths,
+    `Deaths susp. (INRB-UMIE)`  = kraemer_susp_deaths,
+    `Deaths conf. (INRB-UMIE)`  = kraemer_conf_deaths
   ) |>
   flextable() |>
   set_header_labels(Date = "Date") |>
@@ -708,9 +708,9 @@ nat_comparison |>
     bg = "#FFF3CD"
   ) |>
   bg(
-    i = ~ !is.na(`Deaths (ours)`) & !is.na(`Deaths susp. (Kraemer)`) &
-         `Deaths (ours)` != `Deaths susp. (Kraemer)`,
-    j = c("Deaths (ours)", "Deaths susp. (Kraemer)"),
+    i = ~ !is.na(`Deaths (ours)`) & !is.na(`Deaths susp. (INRB-UMIE)`) &
+         `Deaths (ours)` != `Deaths susp. (INRB-UMIE)`,
+    j = c("Deaths (ours)", "Deaths susp. (INRB-UMIE)"),
     bg = "#FFF3CD"
   ) |>
   colformat_num(na_str = "—") |>
@@ -785,24 +785,24 @@ zone_sum_vs_nat |>
 
 ### Data quality notes — case counts
 
-Two issues in the Mongbwalu data are worth noting. First, the early Kraemer data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the Kraemer data; this is a gap in zone-level reporting, not a sign that cases only began in May.
+Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the Kraemer data; this is a gap in zone-level reporting, not a sign that cases only began in May.
 
-Second, both our data and the Kraemer data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the Kraemer series shows the raw figure.
+Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
 
-At the right edge of the case-count comparison panels, the automated extraction now extends to 27 May (SitRep 013) while the latest zone-level values in the Kraemer dataset are from 26 May. Any apparent divergence on the final date therefore reflects a one-day coverage gap rather than a methodological disagreement.
+At the right edge of the case-count comparison panels, the automated extraction now extends to 27 May (SitRep 013) while the latest zone-level values in the INRB-UMIE dataset are from 26 May. Any apparent divergence on the final date therefore reflects a one-day coverage gap rather than a methodological disagreement.
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). Both automated and INRB-UMIE sources use identical PDFs; divergence reflects extraction method differences."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
   "Automated extraction" = "#0072B2",
-  "Kraemer lab"          = "#E69F00"
+  "INRB-UMIE"            = "#E69F00"
 )
 LTY_COMP <- c(
   "Automated extraction" = "solid",
-  "Kraemer lab"          = "dashed"
+  "INRB-UMIE"            = "dashed"
 )
 POINT_SIZE_OURS <- 2.2
 POINT_SIZE_KRAEMER <- 1.7
@@ -830,14 +830,14 @@ our_nat_for_comp <- ous_national |>
             deaths      = ours_deaths,
             source      = "Automated extraction")
 
-# Kraemer deaths_susp = suspected only; deaths = suspected + confirmed (total)
+# INRB-UMIE deaths_susp = suspected only; deaths = suspected + confirmed (total)
 kraemer_for_comp <- kraemer |>
   left_join(zone_province_lut, by = "zone") |>
   transmute(zone, province, date, confirmed, suspected,
             deaths_susp, deaths,
             source)
 
-# Kraemer national totals
+# INRB-UMIE national totals
 kraemer_nat_for_comp <- parsed_kraemer_nat |>
   transmute(zone     = "National",
             province = "National",
@@ -847,7 +847,7 @@ kraemer_nat_for_comp <- parsed_kraemer_nat |>
             deaths_susp = kraemer_susp_deaths,
             deaths      = coalesce(kraemer_susp_deaths, 0) +
                           coalesce(kraemer_conf_deaths, 0),
-            source      = "Kraemer lab")
+            source      = "INRB-UMIE")
 
 comp_long <- bind_rows(our_nat_for_comp, kraemer_nat_for_comp,
                        our_for_comp, kraemer_for_comp) |>
@@ -862,7 +862,7 @@ comp_long <- bind_rows(our_nat_for_comp, kraemer_nat_for_comp,
     ),
     metric   = factor(metric, levels = c("Confirmed cases", "Suspect/probable cases",
                                           "Suspected deaths", "Total deaths (coalesced)")),
-    source   = factor(source, levels = c("Automated extraction", "Kraemer lab")),
+    source   = factor(source, levels = c("Automated extraction", "INRB-UMIE")),
     province = factor(province, levels = c("National", "Ituri", "Nord-Kivu")),
     zone     = factor(zone, levels = c("National", ZONE_LEVELS))
   ) |>
@@ -890,7 +890,7 @@ p_nat <- ggplot(comp_long_nat,
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"),
+  geom_point(data = ~filter(.x, source == "INRB-UMIE"),
              size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
   facet_wrap(~ metric, ncol = 1, scales = "free_y") +
   labs(x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
@@ -902,7 +902,7 @@ p_zones <- ggplot(comp_long_zones,
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"),
+  geom_point(data = ~filter(.x, source == "INRB-UMIE"),
              size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
   facet_nested(metric ~ province + zone, scales = "free_y") +
   labs(x = NULL, y = NULL, colour = NULL, linetype = NULL,
@@ -914,8 +914,8 @@ p <- (p_nat | p_zones) +
   plot_layout(widths = c(1, 5), guides = "collect") +
   plot_annotation(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
-    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026",
+    subtitle = "Cumulative counts: automated extraction (raw) vs INRB-UMIE (manual extraction, same source PDFs)",
+    caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026",
     theme    = theme_sitrep(base_size = 9)
   ) &
   theme(legend.position = "bottom")
@@ -927,7 +927,7 @@ Table 2 presents numerical differences at the most recent date available in each
 
 ```{r}
 #| label: tbl-comparison
-#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: automated extraction vs Kraemer lab. Delta = ours minus Kraemer. Dashes indicate no data in that source."
+#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: automated extraction vs INRB-UMIE. Delta = ours minus INRB-UMIE. Dashes indicate no data in that source."
 ours_latest <- zone_ts |>
   group_by(zone) |>
   slice_max(date, n = 1) |>
@@ -955,9 +955,9 @@ full_join(ours_latest, kraemer_latest, by = "zone") |>
   ) |>
   setNames(c(
     "Health zone",
-    "Confirmed (ours)", "Confirmed (Kraemer)", "\u0394 confirmed",
-    "Suspect/prob. (ours)", "Suspect/prob. (Kraemer)", "\u0394 suspect/prob.",
-    "Deaths (ours)", "Deaths (Kraemer)", "\u0394 deaths"
+    "Confirmed (ours)", "Confirmed (INRB-UMIE)", "\u0394 confirmed",
+    "Suspect/prob. (ours)", "Suspect/prob. (INRB-UMIE)", "\u0394 suspect/prob.",
+    "Deaths (ours)", "Deaths (INRB-UMIE)", "\u0394 deaths"
   )) |>
   flextable() |>
   bold(part = "header") |>
@@ -1005,15 +1005,15 @@ poe_ours <- read_csv(
 
 Two points are worth flagging when comparing the response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three sub-columns without explaining what each represents. Both datasets handle this differently, so the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005 and 006 used an earlier table layout that made the in-bed count and new admissions columns harder to distinguish; the two datasets differ slightly on those dates as a result. From 22 May onwards, when the table format was standardised, the datasets are in close agreement.
 
-The Kraemer processed sitrep files currently extend through 26 May for hospital indicators and through 26 May for PoE indicators (both updated to build `2026-05-28`), while our automated extraction now covers through 27 May (SitRep 013). The validation panels therefore overlap fully through 26 May; any gap at the right edge of those panels reflects a one-day coverage difference rather than a methodological discrepancy.
+The INRB-UMIE processed sitrep files currently extend through 26 May for hospital indicators and through 26 May for PoE indicators (both updated to build `2026-05-28`), while our automated extraction now covers through 27 May (SitRep 013). The validation panels therefore overlap fully through 26 May; any gap at the right edge of those panels reflects a one-day coverage difference rather than a methodological discrepancy.
 
 ```{r}
 #| label: fig-comparison-response
-#| fig-cap: "Cross-source comparison of zone-level response indicators. Solid lines: automated extraction; dashed lines: Kraemer lab. Both series treat the ambiguous 21 May Rwampara sub-columns differently; values for that date should be interpreted cautiously. The two datasets differ slightly on 20–21 May due to an ambiguous table layout in SitReps 005–006, and are in close agreement from 22 May onwards."
+#| fig-cap: "Cross-source comparison of zone-level response indicators. Solid lines: automated extraction; dashed lines: INRB-UMIE. Both series treat the ambiguous 21 May Rwampara sub-columns differently; values for that date should be interpreted cautiously. The two datasets differ slightly on 20–21 May due to an ambiguous table layout in SitReps 005–006, and are in close agreement from 22 May onwards."
 #| fig-width: 12
 #| fig-height: 9
-PAL_RESP <- c("Automated extraction" = "#0072B2", "Kraemer lab" = "#E69F00")
-LTY_RESP <- c("Automated extraction" = "solid",   "Kraemer lab" = "dashed")
+PAL_RESP <- c("Automated extraction" = "#0072B2", "INRB-UMIE" = "#E69F00")
+LTY_RESP <- c("Automated extraction" = "solid",   "INRB-UMIE" = "dashed")
 
 resp_comp <- bind_rows(
   resp_ours |>
@@ -1040,14 +1040,14 @@ resp_comp <- bind_rows(
     metric = factor(metric, levels = c("Currently hospitalised",
                                         "In bed (prev. day)",
                                         "New admissions (total)")),
-    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+    source = factor(source, levels = c("Automated extraction", "INRB-UMIE"))
   ) |>
   filter(!is.na(count), !is.na(zone))
 
 p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"), size = POINT_SIZE_OURS, na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "INRB-UMIE"), size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
   facet_nested(metric ~ zone, scales = "free_y") +
   scale_colour_manual(values = PAL_RESP) +
   scale_linetype_manual(values = LTY_RESP) +
@@ -1056,9 +1056,9 @@ p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = sour
                      expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Response indicators — cross-source validation",
-    subtitle = "Automated extraction vs Kraemer lab (manual, same source PDFs)",
+    subtitle = "Automated extraction vs INRB-UMIE (manual, same source PDFs)",
     x = NULL, y = "Count", colour = NULL, linetype = NULL,
-    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
+    caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026"
   ) +
   theme_sitrep(base_size = 9) +
   theme(
@@ -1073,7 +1073,7 @@ knitr::include_graphics(here("outputs", "plots", "fig-comparison-response.png"))
 
 ```{r}
 #| label: fig-comparison-poe
-#| fig-cap: "Cross-source comparison of daily Point of Entry (POE) screening totals. Automated extraction reports a single aggregate per sitrep date; Kraemer lab data are summed across individual checkpoints to produce a daily total."
+#| fig-cap: "Cross-source comparison of daily Point of Entry (POE) screening totals. Automated extraction reports a single aggregate per sitrep date; INRB-UMIE data are summed across individual checkpoints to produce a daily total."
 #| fig-width: 9
 #| fig-height: 6
 poe_comp <- bind_rows(poe_ours, kraemer_poe) |>
@@ -1088,14 +1088,14 @@ poe_comp <- bind_rows(poe_ours, kraemer_poe) |>
     ),
     metric = factor(metric, levels = c("Total passed", "Screened",
                                         "Handwashing stations", "Sensitised")),
-    source = factor(source, levels = c("Automated extraction", "Kraemer lab"))
+    source = factor(source, levels = c("Automated extraction", "INRB-UMIE"))
   ) |>
   filter(!is.na(count))
 
 p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"), size = POINT_SIZE_OURS + 0.3, na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = POINT_SIZE_KRAEMER + 0.3, na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "INRB-UMIE"), size = POINT_SIZE_KRAEMER + 0.3, na.rm = TRUE, show.legend = FALSE) +
   facet_wrap(~ metric, scales = "free_y", ncol = 2) +
   scale_colour_manual(values = PAL_RESP) +
   scale_linetype_manual(values = LTY_RESP) +
@@ -1104,9 +1104,9 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
                      expand = expansion(mult = c(0, 0.12))) +
   labs(
     title    = "MVE DRC \u2014 POE screening — cross-source validation",
-    subtitle = "Daily aggregate totals: automated extraction vs Kraemer lab (sum across checkpoints; Kraemer extends to 26 May)",
+    subtitle = "Daily aggregate totals: automated extraction vs INRB-UMIE (sum across checkpoints; INRB-UMIE extends to 26 May)",
     x = NULL, y = "Count", colour = NULL, linetype = NULL,
-    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
+    caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026"
   ) +
   theme_sitrep(base_size = 11) +
   theme(
@@ -1121,7 +1121,7 @@ knitr::include_graphics(here("outputs", "plots", "fig-comparison-poe.png"))
 
 ```{r}
 #| label: fig-comparison-contacts
-#| fig-cap: "Cross-source comparison of cumulative contacts traced by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). ND values excluded."
+#| fig-cap: "Cross-source comparison of cumulative contacts traced by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). ND values excluded."
 #| fig-width: 11
 #| fig-height: 7
 contacts_ours <- df |>
@@ -1141,13 +1141,13 @@ contacts_ours <- df |>
 contacts_kraemer <- kraemer_contacts |>
   filter(zone %in% ZONE_LEVELS) |>
   transmute(date, zone = factor(zone, levels = ZONE_LEVELS),
-            contacts = contacts_traced, source = "Kraemer lab")
+            contacts = contacts_traced, source = "INRB-UMIE")
 
 contacts_comp <- bind_rows(contacts_ours, contacts_kraemer) |>
   filter(!is.na(contacts)) |>
   left_join(zone_province_lut, by = "zone") |>
   mutate(
-    source   = factor(source, levels = c("Automated extraction", "Kraemer lab")),
+    source   = factor(source, levels = c("Automated extraction", "INRB-UMIE")),
     province = factor(province, levels = c("Ituri", "Nord-Kivu")),
     zone     = factor(zone, levels = ZONE_LEVELS)
   )
@@ -1156,18 +1156,18 @@ p <- ggplot(contacts_comp,
             aes(x = date, y = contacts, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"), size = POINT_SIZE_OURS, na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "INRB-UMIE"), size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
   facet_nested(~ province + zone, scales = "free_y") +
-  scale_colour_manual(values = PAL_COMP[c("Automated extraction","Kraemer lab")]) +
-  scale_linetype_manual(values = LTY_COMP[c("Automated extraction","Kraemer lab")]) +
+  scale_colour_manual(values = PAL_COMP[c("Automated extraction","INRB-UMIE")]) +
+  scale_linetype_manual(values = LTY_COMP[c("Automated extraction","INRB-UMIE")]) +
   scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cumulative contacts traced — cross-source validation",
-    subtitle = "Automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
+    subtitle = "Automated extraction (raw) vs INRB-UMIE (manual extraction, same source PDFs)",
     x = NULL, y = "Cumulative contacts traced", colour = NULL, linetype = NULL,
-    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
+    caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026"
   ) +
   theme_sitrep(base_size = 9) +
   theme(
@@ -1184,4 +1184,4 @@ knitr::include_graphics(here("outputs", "plots", "fig-comparison-contacts.png"))
 
 Case counts have risen steadily over the reporting period. Confirmed cases remain a small fraction of all reported cases, which is typical in field settings where laboratory testing capacity is limited. The outbreak spans health zones in both Ituri and Nord-Kivu, pointing to the need for a coordinated response across provincial boundaries.
 
-A few limitations are worth keeping in mind. Earlier situation reports did not break case counts down by health zone, so the zone-level data only covers part of the outbreak period. Response indicators such as hospitalisations and contacts traced are not formatted consistently across reports, which makes trend comparisons harder. Comparing our automated extraction with the Kraemer lab manual series provides a useful cross-check: where the two agree we can be more confident in the figures; where they differ, it usually points to genuine ambiguity in the source document that is worth flagging to the data providers.
+A few limitations are worth keeping in mind. Earlier situation reports did not break case counts down by health zone, so the zone-level data only covers part of the outbreak period. Response indicators such as hospitalisations and contacts traced are not formatted consistently across reports, which makes trend comparisons harder. Comparing our automated extraction with the INRB-UMIE manual series provides a useful cross-check: where the two agree we can be more confident in the figures; where they differ, it usually points to genuine ambiguity in the source document that is worth flagging to the data providers.

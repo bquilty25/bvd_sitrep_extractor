@@ -4,11 +4,11 @@
 
 > **⚠️ Automated extraction — verification required.** Case counts are extracted by an AI vision model without systematic manual verification. Values should be checked against the [original INSP DRC PDFs](https://insp.cd/ebola/) before any operational or clinical use. For research and situational awareness only.
 
-Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/sitrep_report.html#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
+Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against INRB-UMIE manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/sitrep_report.html#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
 
 ![Cross-source validation figure](outputs/plots/fig-comparison.png)
 
-*Figure: Cross-source validation of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone, comparing automated extraction with Kraemer Lab manual extraction.*
+*Figure: Cross-source validation of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone, comparing automated extraction with INRB-UMIE manual extraction.*
 
 Author: Billy J Quilty (Charité Berlin, LSHTM & MSF Epicentre)
 
@@ -106,7 +106,7 @@ PDF archive:
 
 > **This feature is experimental.** It requires VS Code with GitHub Copilot and the `agent` chat mode.
 
-The pipeline can be orchestrated end-to-end via a custom GitHub Copilot agent defined in [`.github/agents/sitrep-orchestrator.agent.md`](.github/agents/sitrep-orchestrator.agent.md). The agent calls the same underlying scripts but handles fetch, extract, Kraemer submodule update, render, and deploy autonomously — with reactive error diagnosis at each stage.
+The pipeline can be orchestrated end-to-end via a custom GitHub Copilot agent defined in [`.github/agents/sitrep-orchestrator.agent.md`](.github/agents/sitrep-orchestrator.agent.md). The agent calls the same underlying scripts but handles fetch, extract, INRB-UMIE submodule update, render, and deploy autonomously — with reactive error diagnosis at each stage.
 
 **Setup:** no additional installation is required beyond the standard prerequisites above. The agent uses the skills in `.github/skills/` for domain-specific guidance.
 
@@ -119,7 +119,7 @@ render report
 extract latest sitreps
 ```
 
-The agent runs `fetch_sitreps.py`, `extract_sitrep.py --update`, updates the Kraemer submodule, renders the Quarto report, and pushes to `origin/main` — prompting you before any destructive step.
+The agent runs `fetch_sitreps.py`, `extract_sitrep.py --update`, updates the INRB-UMIE submodule, renders the Quarto report, and pushes to `origin/main` — prompting you before any destructive step.
 
 ## License
 
