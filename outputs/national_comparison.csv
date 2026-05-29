@@ -1,0 +1,11 @@
+date,sitrep_source,ours_suspected,ours_confirmed,ours_deaths,bvd_sitrep,bvd_suspected,bvd_confirmed,bvd_deaths,bvd_notes,kraemer_suspected,kraemer_confirmed,kraemer_deaths,flag_suspected,flag_confirmed,flag_deaths
+2026-05-18,MVE_SitRep_004_2026-05-20,516,33,131,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2026-05-19,MVE_SitRep_005_2026-05-20,575,51,148,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2026-05-20,MVE_SitRep_006_2026-05-21,671,61,160,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2026-05-21,MVE_SitRep_007_2026-05-22,746,83,176,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2026-05-22,MVE_SitRep_008_2026-05-23,867,91,204,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA,NA
+2026-05-23,MVE_SitRep_009_2026-05-24,904,101,119,SitRep 009,904,101,220,front-page headline prints 119 suspected deaths in error; Tableau IV per-zone rows sum to 220 (value used),NA,NA,NA,NA,NA,ours≠BVD
+2026-05-24,MVE_SitRep_010_2026-05-25,906,105,223,SitRep 010,906,105,223,report notes a data-entry error (erreur de saisie); 4 positives received without sample detail; 257 samples sent to INRB Kinshasa,NA,NA,NA,NA,NA,NA
+2026-05-25,MVE_SitRep_011_2026-05-27,998,106,238,SitRep 011,998,106,238,aucun echantillon analyse en Ituri this day; 203 unanalysed samples sent to Kinshasa; samples analysed flat at 295,NA,NA,NA,NA,NA,NA
+2026-05-26,MVE_SitRep_012_2026-05-27_v2,1077,121,246,SitRep 012,1077,121,238,cut-off vintage; no per-zone case table in this report to cross-check the headline,NA,NA,NA,NA,NA,ours≠BVD
+2026-05-27,MVE_SitRep_013_2026-05-28,906,125,223,NA,NA,NA,NA,NA,906,125,240,NA,NA,ours≠Kraemer

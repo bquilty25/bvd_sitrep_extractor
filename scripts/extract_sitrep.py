@@ -84,6 +84,35 @@ ZONE_NAME_MAP: dict[str, str] = {
     "bambu":     "Bambu",
 }
 
+# Canonical zone name → province.  Applied as a post-processing fallback when
+# the PDF does not repeat the province on every data row.
+ZONE_PROVINCE_MAP: dict[str, str] = {
+    # Ituri
+    "Aru":                     "Ituri",
+    "Bambu":                   "Ituri",
+    "Bunia":                   "Ituri",
+    "Echantillons sans fiche": "Ituri",
+    "Kilo":                    "Ituri",
+    "Kilo Mission":            "Ituri",
+    "Mambasa":                 "Ituri",
+    "Mongbwalu":               "Ituri",
+    "Nizi":                    "Ituri",
+    "Nyankunde":               "Ituri",
+    "Rwampara":                "Ituri",
+    # Nord-Kivu
+    "Butembo":                 "Nord-Kivu",
+    "Goma":                    "Nord-Kivu",
+    "Kalunguta":               "Nord-Kivu",
+    "Karisimbi":               "Nord-Kivu",
+    "Karissibi":               "Nord-Kivu",
+    "Katwa":                   "Nord-Kivu",
+    "Kyondo":                  "Nord-Kivu",
+    "Oicha":                   "Nord-Kivu",
+    # Sud-Kivu
+    "Miti Murhesa":            "Sud-Kivu",
+    "Miti-Murhesa":            "Sud-Kivu",
+}
+
 
 # Detect rows where multiple zones are packed into a single cell, e.g.
 # "Mongbwalu, Bunia, Rwampara (3 ZS)" — these are aggregate summary rows.
@@ -375,7 +404,7 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
             "contacts":         _nd(r.get("contacts", "")),
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
-            "province":         r.get("province", ""),
+            "province":         r.get("province", "") or ZONE_PROVINCE_MAP.get(normalise_zone(r.get("zone_de_sante", "")), ""),
             "sitrep_source":    source,
             "is_aggregate":     _is_aggregate(r.get("zone_de_sante", ""), r.get("province", "")),
         })
@@ -396,7 +425,7 @@ def build_combined_counts(raw_data: dict, sitrep_date: str, source: str = "") ->
             "deaths_confirmed": _nd(r.get("deces_confirmes", "")),
             "contacts":         _nd(r.get("contacts", "")),
             "zone":             normalise_zone(r.get("zone_de_sante", "")),
-            "province":         r.get("province", ""),
+            "province":         r.get("province", "") or ZONE_PROVINCE_MAP.get(normalise_zone(r.get("zone_de_sante", "")), ""),
             "sitrep_source":    source,
             "is_aggregate":     _is_aggregate(r.get("zone_de_sante", ""), r.get("province", "")),
         })

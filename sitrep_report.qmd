@@ -21,7 +21,7 @@ execute:
 ```{r}
 #| label: setup
 if (!requireNamespace("pacman", quietly = TRUE)) install.packages("pacman")
-pacman::p_load(tidyverse, lubridate, here, scales, ggrepel, flextable, ggh4x)
+pacman::p_load(tidyverse, lubridate, here, scales, ggrepel, flextable, ggh4x, patchwork)
 
 set_flextable_defaults(
   font.family = "Arial",
@@ -55,6 +55,39 @@ df <- df_raw |>
       NA_real_
     )
   )
+
+# Backfill province for rows where the PDF did not repeat it on every data row.
+# Aggregate/total rows are left as-is (their province is intentionally blank or
+# a province name used to identify the aggregate level).
+ZONE_PROVINCE_LUT <- tribble(
+  ~zone,                     ~province_lut,
+  "Aru",                     "Ituri",
+  "Bambu",                   "Ituri",
+  "Bunia",                   "Ituri",
+  "Echantillons sans fiche", "Ituri",
+  "Kilo",                    "Ituri",
+  "Kilo Mission",            "Ituri",
+  "Mambasa",                 "Ituri",
+  "Mongbwalu",               "Ituri",
+  "Nizi",                    "Ituri",
+  "Nyankunde",               "Ituri",
+  "Rwampara",                "Ituri",
+  "Butembo",                 "Nord-Kivu",
+  "Goma",                    "Nord-Kivu",
+  "Kalunguta",               "Nord-Kivu",
+  "Karisimbi",               "Nord-Kivu",
+  "Karissibi",               "Nord-Kivu",
+  "Katwa",                   "Nord-Kivu",
+  "Kyondo",                  "Nord-Kivu",
+  "Oicha",                   "Nord-Kivu",
+  "Miti Murhesa",            "Sud-Kivu",
+  "Miti-Murhesa",            "Sud-Kivu",
+)
+
+df <- df |>
+  left_join(ZONE_PROVINCE_LUT, by = "zone") |>
+  mutate(province = if_else(!is_agg & is.na(province), province_lut, province)) |>
+  select(-province_lut)
 
 ZONE_LEVELS <- c(
   "Mongbwalu", "Rwampara", "Bunia", "Nyankunde", "Bambu",
@@ -197,7 +230,7 @@ read_kraemer_long <- function(filename) {
 }
 
 parse_kraemer_date <- function(x) {
-  coalesce(dmy(x, quiet = TRUE), ymd(x, quiet = TRUE))
+  coalesce(dmy(x, quiet = TRUE), ymd(x, quiet = TRUE), mdy(x, quiet = TRUE))
 }
 
 kraemer <- read_kraemer_long("insp_sitrep__cumulative_confirmed_cases") |>
@@ -305,6 +338,100 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
     .groups = "drop"
   ) |>
   mutate(source = "Kraemer lab")
+```
+
+```{r}
+#| label: load-bvd-reference
+# BVDOutbreakSize PDF-scanned national reference (SitReps 009-012, 23-26 May)
+# Source: github.com/epiforecasts/BVDOutbreakSize PR #140
+bvd_ref <- read_csv(
+  here::here("outputs", "bvd_outbreak_size_national_reference.csv"),
+  col_types      = cols(.default = "c"),
+  show_col_types = FALSE
+) |>
+  mutate(
+    date          = ymd(report_date),
+    bvd_sitrep    = paste0("SitRep ", sitrep),
+    bvd_suspected = as.numeric(suspected_cases),
+    bvd_confirmed = as.numeric(confirmed_cases),
+    bvd_deaths    = as.numeric(suspected_deaths)
+  ) |>
+  transmute(date, bvd_sitrep, bvd_suspected, bvd_confirmed, bvd_deaths, bvd_notes = notes)
+
+# Kraemer national totals (single snapshot: 27 May 2026)
+read_kraemer_national_snapshot <- function(filename, value_col) {
+  read_kraemer_long(filename) |>
+    rename(value = all_of(value_col)) |>
+    mutate(
+      date  = parse_kraemer_date(date),
+      value = suppressWarnings(as.numeric(value))
+    ) |>
+    filter(!is.na(date)) |>
+    group_by(date) |>
+    summarise(value = first(value), .groups = "drop")
+}
+
+parsed_kraemer_nat <-
+  read_kraemer_national_snapshot(
+    "insp_sitrep__national_cumulative_suspected_cases",
+    "national_cumulative_suspected_cases"
+  ) |> rename(kraemer_suspected = value) |>
+  full_join(
+    read_kraemer_national_snapshot(
+      "insp_sitrep__national_cumulative_confirmed_cases",
+      "national_cumulative_confirmed_cases"
+    ) |> rename(kraemer_confirmed = value),
+    by = "date"
+  ) |>
+  full_join(
+    read_kraemer_national_snapshot(
+      "insp_sitrep__national_cumulative_suspected_deaths",
+      "national_cumulative_suspected_deaths"
+    ) |> rename(kraemer_susp_deaths = value),
+    by = "date"
+  ) |>
+  full_join(
+    read_kraemer_national_snapshot(
+      "insp_sitrep__national_cumulative_confirmed_deaths",
+      "national_cumulative_confirmed_deaths"
+    ) |> rename(kraemer_conf_deaths = value),
+    by = "date"
+  )
+
+# Pull our national aggregate Cumules rows
+# Priority: province=="Total" > zone=="Total" > both NA
+ous_national <- df_raw |>
+  filter(
+    count_type == "Cumules",
+    toupper(is_aggregate) == "TRUE",
+    (zone == "Total" | province == "Total" | (is.na(zone) & is.na(province)))
+  ) |>
+  mutate(
+    date      = dmy(count_end_date),
+    suspected = as.numeric(cases_suspect),
+    confirmed = as.numeric(cases_confirmed),
+    deaths    = coalesce(
+      as.numeric(deaths_suspected),
+      as.numeric(deaths_probable),
+      as.numeric(deaths_confirmed)
+    ),
+    row_priority = case_when(
+      province == "Total" ~ 3L,
+      zone == "Total"     ~ 2L,
+      TRUE                ~ 1L
+    )
+  ) |>
+  group_by(date) |>
+  slice_max(order_by = row_priority, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  transmute(date, sitrep_source, ours_suspected = suspected,
+            ours_confirmed = confirmed, ours_deaths = deaths)
+
+# Join all three sources
+nat_comparison <- ous_national |>
+  full_join(bvd_ref,           by = "date") |>
+  full_join(parsed_kraemer_nat, by = "date") |>
+  arrange(date)
 ```
 
 ## Introduction
@@ -533,7 +660,60 @@ bind_rows(zone_latest, total_row) |>
 
 ### Cross-source validation
 
-We checked our automated extraction against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) manually coded dataset, which is built from the same situation reports. Because both datasets work from identical PDFs, any differences between them tell us something about how the tables were interpreted — which is useful for catching errors on either side and understanding ambiguous formatting in the source documents. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
+We checked our automated extraction against the [Kraemer lab Ebola DRC 2026](https://github.com/kraemer-lab/Ebola_DRC_2026) manually coded dataset. For SitReps 1–11, both datasets work from the same PDF files, so any differences between them reflect how the tables were read rather than which documents were used. From SitRep 12 onwards, the Kraemer lab received health-zone tables directly from INRB via WhatsApp; these may not correspond exactly to the figures published in each PDF. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
+
+#### National-level comparison — this repo, BVDOutbreakSize, and Kraemer lab
+
+At the national level, cumulative suspected and confirmed case counts agree exactly across all three sources for every date in the overlap period. The only divergences are in the deaths series.
+
+From SitRep 10 onwards, INSP's front-page banner figures and the per-health-zone sub-tables frequently report different national totals. The Kraemer lab tracks both separately: files named `national_*` contain the banner figures, which represent INSP's official national position; files without `national` in the name contain the zone-level sub-table values. This repo also reads from the front-page banner. BVDOutbreakSize, by contrast, derives national totals by summing the per-zone rows. The disagreement between these approaches therefore reflects a structural feature of the source documents — INSP's own banner and sub-tables often disagree — rather than an error in either dataset.
+
+On 23 May (SitRep 009), this repo and the Kraemer national figure both record 119 suspected deaths, matching the front-page banner. [BVDOutbreakSize](https://github.com/epiforecasts/BVDOutbreakSize/pull/140) (PR \#140) records 220, which is the per-zone row sum. Both values are internally consistent with their respective source tables. On 26 May (SitRep 012), both a first and a revised version of the PDF were processed. The original extraction (SitRep\_012) records 238 deaths (matching BVDOutbreakSize), while the revised extraction (SitRep\_012\_v2) records 246 deaths; there was no per-zone case table in this report against which to cross-check the banner figure. The Kraemer lab national snapshot currently covers 27 May only (back-filling to SitRep 10 is in progress); on that date their banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths, consistent with this repo.
+
+```{r}
+#| label: tbl-national-comparison
+#| tbl-cap: "National cumulative totals — cross-source comparison. Shading indicates values that differ across sources. BVD: BVDOutbreakSize (epiforecasts/BVDOutbreakSize PR \\#140); Kraemer: kraemer-lab/Ebola\_DRC\_2026. A dash indicates no data available from that source for that date."
+nat_comparison |>
+  transmute(
+    Date                     = format(date, "%d %b"),
+    `Suspect. (ours)`        = ours_suspected,
+    `Suspect. (BVD)`         = bvd_suspected,
+    `Suspect. (Kraemer)`     = kraemer_suspected,
+    `Confirmed (ours)`       = ours_confirmed,
+    `Confirmed (BVD)`        = bvd_confirmed,
+    `Confirmed (Kraemer)`    = kraemer_confirmed,
+    `Deaths (ours)`          = ours_deaths,
+    `Deaths (BVD)`           = bvd_deaths,
+    `Deaths susp. (Kraemer)` = kraemer_susp_deaths,
+    `Deaths conf. (Kraemer)` = kraemer_conf_deaths
+  ) |>
+  flextable() |>
+  set_header_labels(Date = "Date") |>
+  add_header_row(
+    values    = c("", "Suspected cases", "Confirmed cases", "Deaths"),
+    colwidths = c(1, 3, 3, 4)
+  ) |>
+  merge_h(part = "header") |>
+  align(align = "center", part = "header") |>
+  align(j = -1, align = "right", part = "body") |>
+  # Highlight cells where sources disagree in the Deaths columns
+  bg(
+    i = ~ !is.na(`Deaths (ours)`) & !is.na(`Deaths (BVD)`) & `Deaths (ours)` != `Deaths (BVD)`,
+    j = c("Deaths (ours)", "Deaths (BVD)"),
+    bg = "#FFF3CD"
+  ) |>
+  bg(
+    i = ~ !is.na(`Deaths (ours)`) & !is.na(`Deaths susp. (Kraemer)`) &
+         `Deaths (ours)` != `Deaths susp. (Kraemer)`,
+    j = c("Deaths (ours)", "Deaths susp. (Kraemer)"),
+    bg = "#FFF3CD"
+  ) |>
+  colformat_num(na_str = "—") |>
+  colformat_int(j = 2:11, na_str = "—") |>
+  bold(part = "header") |>
+  hline(part = "body") |>
+  autofit()
+```
 
 ### Data quality notes — case counts
 
@@ -571,6 +751,17 @@ our_for_comp <- zone_ts |>
             deaths      = deaths_raw,
             source      = "Automated extraction")
 
+# National totals — ours (raw extracted values, no cummax enforcement)
+our_nat_for_comp <- ous_national |>
+  transmute(zone     = "National",
+            province = "National",
+            date,
+            confirmed   = ours_confirmed,
+            suspected   = ours_suspected,
+            deaths_susp = ours_deaths,
+            deaths      = ours_deaths,
+            source      = "Automated extraction")
+
 # Kraemer deaths_susp = suspected only; deaths = suspected + confirmed (total)
 kraemer_for_comp <- kraemer |>
   left_join(zone_province_lut, by = "zone") |>
@@ -578,7 +769,20 @@ kraemer_for_comp <- kraemer |>
             deaths_susp, deaths,
             source)
 
-comp_long <- bind_rows(our_for_comp, kraemer_for_comp) |>
+# Kraemer national totals
+kraemer_nat_for_comp <- parsed_kraemer_nat |>
+  transmute(zone     = "National",
+            province = "National",
+            date,
+            confirmed   = kraemer_confirmed,
+            suspected   = kraemer_suspected,
+            deaths_susp = kraemer_susp_deaths,
+            deaths      = coalesce(kraemer_susp_deaths, 0) +
+                          coalesce(kraemer_conf_deaths, 0),
+            source      = "Kraemer lab")
+
+comp_long <- bind_rows(our_nat_for_comp, kraemer_nat_for_comp,
+                       our_for_comp, kraemer_for_comp) |>
   pivot_longer(c(confirmed, suspected, deaths_susp, deaths),
                names_to = "metric", values_to = "count") |>
   mutate(
@@ -591,32 +795,62 @@ comp_long <- bind_rows(our_for_comp, kraemer_for_comp) |>
     metric   = factor(metric, levels = c("Confirmed cases", "Suspect/probable cases",
                                           "Suspected deaths", "Total deaths (coalesced)")),
     source   = factor(source, levels = c("Automated extraction", "Kraemer lab")),
-    province = factor(province, levels = c("Ituri", "Nord-Kivu")),
-    zone     = factor(zone, levels = ZONE_LEVELS)
+    province = factor(province, levels = c("National", "Ituri", "Nord-Kivu")),
+    zone     = factor(zone, levels = c("National", ZONE_LEVELS))
   ) |>
   filter(!is.na(count))
 
-p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = source)) +
+comp_long_nat   <- filter(comp_long, zone == "National")
+comp_long_zones <- filter(comp_long, zone != "National")
+
+base_theme <- list(
+  scale_colour_manual(values = PAL_COMP),
+  scale_linetype_manual(values = LTY_COMP),
+  scale_x_date(date_labels = "%d %b", date_breaks = "2 days"),
+  scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.15))),
+  theme_sitrep(base_size = 9),
+  theme(
+    axis.text.x  = element_text(angle = 45, hjust = 1, size = 7),
+    panel.border = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
+    panel.spacing = unit(0.6, "lines")
+  )
+)
+
+p_nat <- ggplot(comp_long_nat,
+                aes(x = date, y = count, colour = source, linetype = source)) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
-  geom_point(data = ~filter(.x, source == "Automated extraction"), size = POINT_SIZE_OURS, na.rm = TRUE, show.legend = FALSE) +
-  geom_point(data = ~filter(.x, source == "Kraemer lab"), size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "Automated extraction"),
+             size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "Kraemer lab"),
+             size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
+  facet_wrap(~ metric, ncol = 1, scales = "free_y") +
+  labs(x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
+       title = "National") +
+  base_theme
+
+p_zones <- ggplot(comp_long_zones,
+                  aes(x = date, y = count, colour = source, linetype = source)) +
+  geom_line(linewidth = 0.9, na.rm = TRUE) +
+  geom_point(data = ~filter(.x, source == "Automated extraction"),
+             size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
+  geom_point(data = ~filter(.x, source == "Kraemer lab"),
+             size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
   facet_nested(metric ~ province + zone, scales = "free_y") +
-  scale_colour_manual(values = PAL_COMP) +
-  scale_linetype_manual(values = LTY_COMP) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
-  scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
-  labs(
+  labs(x = NULL, y = NULL, colour = NULL, linetype = NULL,
+       title = "By health zone") +
+  base_theme +
+  theme(axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+p <- (p_nat | p_zones) +
+  plot_layout(widths = c(1, 5), guides = "collect") +
+  plot_annotation(
     title    = "MVE DRC \u2014 Cross-source validation",
     subtitle = "Cumulative counts: automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
-    x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
-    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
-  ) +
-  theme_sitrep(base_size = 9) +
-  theme(
-    axis.text.x     = element_text(angle = 45, hjust = 1, size = 7),
-    panel.border    = element_rect(colour = "grey70", fill = NA, linewidth = 0.4),
-    panel.spacing   = unit(0.6, "lines")
-  )
+    caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026",
+    theme    = theme_sitrep(base_size = 9)
+  ) &
+  theme(legend.position = "bottom")
 ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 14, dpi = 300)
 knitr::include_graphics(here("outputs", "plots", "fig-comparison.png"))
 ```
