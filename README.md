@@ -116,7 +116,7 @@ The pipeline can be orchestrated end-to-end via a custom GitHub Copilot agent de
 check for updates
 run full pipeline
 render report
-extract latest sitreps
+compare against INRB data
 ```
 
 The agent runs `fetch_sitreps.py`, `extract_sitrep.py --update`, updates the INRB-UMIE submodule, renders the Quarto report, and pushes to `origin/main` — prompting you before any destructive step.
