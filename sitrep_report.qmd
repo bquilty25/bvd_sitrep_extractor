@@ -545,7 +545,7 @@ At the right edge of the case-count comparison panels, the automated extraction 
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: Kraemer lab (manual extraction). Both automated and Kraemer sources use identical PDFs; divergence reflects extraction method differences."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (monotone-corrected); dashed lines: Kraemer lab (manual extraction, monotone-corrected). Both sources use identical PDFs; divergence reflects extraction method differences. Downward revisions in either source are suppressed by cummax."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
@@ -565,18 +565,24 @@ zone_province_lut <- zone_ts |>
 
 our_for_comp <- zone_ts |>
   transmute(zone = as.character(zone), province, date,
-            confirmed   = confirmed_raw,
-            suspected   = unconfirmed_raw,
-            deaths_susp = deaths_susp_raw,
-            deaths      = deaths_raw,
+            confirmed,
+            suspected   = unconfirmed,
+            deaths_susp,
+            deaths,
             source      = "Automated extraction")
 
 # Kraemer deaths_susp = suspected only; deaths = suspected + confirmed (total)
+# Apply the same cummax monotone correction used for our data
 kraemer_for_comp <- kraemer |>
   left_join(zone_province_lut, by = "zone") |>
   transmute(zone, province, date, confirmed, suspected,
             deaths_susp, deaths,
-            source)
+            source) |>
+  group_by(zone) |>
+  arrange(date) |>
+  mutate(across(c(confirmed, suspected, deaths_susp, deaths),
+                ~{x <- .x; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x})) |>
+  ungroup()
 
 comp_long <- bind_rows(our_for_comp, kraemer_for_comp) |>
   pivot_longer(c(confirmed, suspected, deaths_susp, deaths),
@@ -607,7 +613,7 @@ p <- ggplot(comp_long, aes(x = date, y = count, colour = source, linetype = sour
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA), expand = expansion(mult = c(0, 0.15))) +
   labs(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction (raw) vs Kraemer lab (manual extraction, same source PDFs)",
+    subtitle = "Cumulative counts: automated extraction (corrected) vs Kraemer lab (manual extraction, corrected)",
     x = NULL, y = "Cumulative count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/kraemer-lab/Ebola_DRC_2026"
   ) +
