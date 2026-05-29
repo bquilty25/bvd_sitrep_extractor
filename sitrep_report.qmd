@@ -715,11 +715,74 @@ nat_comparison |>
   autofit()
 ```
 
+#### Internal consistency — zone sum vs national aggregate
+
+As an internal check, we summed the cumulative counts across all health zones present in each situation report and compared the result with the national aggregate extracted from the front-page banner. Where the two disagree, this typically reflects one of three structural features: early reports that provided only a province-level Ituri total rather than individual zone rows; reports where not all zones were individually listed; or the banner vs sub-table discrepancy that INSP introduced from SitRep 10 onwards (described above). Rows with a non-zero difference are highlighted.
+
+```{r}
+#| label: tbl-zone-sum-check
+#| tbl-cap: "Zone sum vs national aggregate. Values show the cumulative total across all extracted health zones versus the national figure from the front-page banner. Δ = zone sum minus national banner. Highlighted rows have a non-zero difference in at least one metric."
+zone_sum_vs_nat <- zone_ts |>
+  group_by(date) |>
+  summarise(
+    sum_susp = if (any(!is.na(unconfirmed_raw))) sum(unconfirmed_raw, na.rm = TRUE) else NA_real_,
+    sum_conf = if (any(!is.na(confirmed_raw)))   sum(confirmed_raw,   na.rm = TRUE) else NA_real_,
+    sum_dths = if (any(!is.na(deaths_raw)))       sum(deaths_raw,      na.rm = TRUE) else NA_real_,
+    .groups  = "drop"
+  ) |>
+  left_join(
+    ous_national |> select(date,
+                            nat_susp = ours_suspected,
+                            nat_conf = ours_confirmed,
+                            nat_dths = ours_deaths),
+    by = "date"
+  ) |>
+  mutate(
+    d_susp = sum_susp - nat_susp,
+    d_conf = sum_conf - nat_conf,
+    d_dths = sum_dths - nat_dths
+  ) |>
+  arrange(date)
+
+discrepant_rows <- which(
+  (!is.na(zone_sum_vs_nat$d_susp) & zone_sum_vs_nat$d_susp != 0) |
+  (!is.na(zone_sum_vs_nat$d_conf) & zone_sum_vs_nat$d_conf != 0) |
+  (!is.na(zone_sum_vs_nat$d_dths) & zone_sum_vs_nat$d_dths != 0)
+)
+
+zone_sum_vs_nat |>
+  transmute(
+    Date             = format(date, "%d %b"),
+    `Zones (susp.)`  = sum_susp,
+    `Nat. (susp.)`   = nat_susp,
+    `Δ susp.`        = d_susp,
+    `Zones (conf.)`  = sum_conf,
+    `Nat. (conf.)`   = nat_conf,
+    `Δ conf.`        = d_conf,
+    `Zones (deaths)` = sum_dths,
+    `Nat. (deaths)`  = nat_dths,
+    `Δ deaths`       = d_dths
+  ) |>
+  flextable() |>
+  add_header_row(
+    values    = c("", "Suspected", "Confirmed", "Deaths"),
+    colwidths = c(1, 3, 3, 3)
+  ) |>
+  merge_h(part = "header") |>
+  align(align = "center", part = "header") |>
+  align(j = -1, align = "right", part = "body") |>
+  bg(i = discrepant_rows, bg = "#FFF3CD") |>
+  colformat_int(j = 2:10, na_str = "—") |>
+  bold(part = "header") |>
+  hline(part = "body") |>
+  autofit()
+```
+
 ### Data quality notes — case counts
 
 Two issues in the Mongbwalu data are worth noting. First, the early Kraemer data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the Kraemer data; this is a gap in zone-level reporting, not a sign that cases only began in May.
 
-Second, both our data and the Kraemer data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a correction or reclassification in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the Kraemer series shows the raw figure.
+Second, both our data and the Kraemer data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the Kraemer series shows the raw figure.
 
 At the right edge of the case-count comparison panels, the automated extraction now extends to 27 May (SitRep 013) while the latest zone-level values in the Kraemer dataset are from 26 May. Any apparent divergence on the final date therefore reflects a one-day coverage gap rather than a methodological disagreement.
 
