@@ -434,6 +434,11 @@ nat_comparison <- ous_national |>
   arrange(date)
 ```
 
+::: {.callout-warning}
+**Automated extraction — verification required.**
+Case counts and figures in this report are extracted from INSP DRC PDF situation reports by an AI vision model (Anthropic Claude `claude-sonnet-4-6`) without systematic manual verification of every value. Extraction errors are possible, particularly where PDF table layouts are complex or inconsistent. All values should be verified against the [original INSP DRC situation reports](https://insp.cd/ebola/) before any operational, clinical, or policy use. This report is intended for research and situational awareness only.
+:::
+
 ## Introduction
 
 This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo, covering cases in Ituri and Nord-Kivu provinces. Data are drawn from official situation reports published by the Institut National de Santé Publique (INSP DRC) and are updated automatically as new reports become available.

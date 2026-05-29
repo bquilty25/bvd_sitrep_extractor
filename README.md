@@ -2,6 +2,8 @@
 
 > AI-assisted development: this pipeline and report were developed with GitHub Copilot and the Anthropic Claude API (`claude-sonnet-4-6`), with human review.
 
+> **⚠️ Automated extraction — verification required.** Case counts are extracted by an AI vision model without systematic manual verification. Values should be checked against the [original INSP DRC PDFs](https://insp.cd/ebola/) before any operational or clinical use. For research and situational awareness only.
+
 Extracts key epidemiological tables from INSP DRC Ebola SitRep PDFs with Claude, then builds standardised CSV outputs and an HTML report, including [cross-source validation against Kraemer Lab manual extraction](https://bquilty25.github.io/bvd_sitrep_extractor/sitrep_report.html#cross-source-validation) (local fallback: [outputs/sitrep_report.html](outputs/sitrep_report.html#cross-source-validation)).
 
 ![Cross-source validation figure](outputs/plots/fig-comparison.png)
