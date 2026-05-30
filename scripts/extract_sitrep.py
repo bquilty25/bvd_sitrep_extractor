@@ -31,6 +31,16 @@ from pathlib import Path
 import anthropic
 import pandas as pd
 
+# ── Sibling-script import: export_inrb_format lives in the same scripts/ dir ───
+_SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+try:
+    from export_inrb_format import export_inrb_format as _export_inrb_format
+    _HAS_INRB_EXPORT = True
+except ImportError:
+    _HAS_INRB_EXPORT = False
+
 # ── Configuration ──────────────────────────────────────────────────────────────
 
 MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
@@ -860,6 +870,9 @@ def _run_rebuild(output_dir: Path) -> None:
     print(f"\nRebuilt from {n_sitreps} sitrep director{'y' if n_sitreps == 1 else 'ies'} "
           f"under {sitreps_dir}/")
 
+    if _HAS_INRB_EXPORT:
+        _export_inrb_format(output_dir=output_dir)
+
 
 def _sort_master(df: pd.DataFrame) -> pd.DataFrame:
     """Sort the master counts table chronologically by count_end_date, then count_type."""
@@ -1036,6 +1049,9 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     print(f"  Master total   : {len(master_df)} rows")
     print("\u2550" * 55)
     print(f"\nOutputs written to: {output_dir}/sitreps/")
+
+    if _HAS_INRB_EXPORT:
+        _export_inrb_format(output_dir=output_dir)
 
 
 def main() -> None:

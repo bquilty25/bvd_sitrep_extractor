@@ -15,6 +15,9 @@ env/
 # PDF archive (large binary files — store locally, do not commit)
 pdfs/
 
+# Raw extraction JSONs (large; regenerated from PDFs on demand)
+data/raw/
+
 # Slide assets — large PNG images stored locally, not committed
 assets/
 
