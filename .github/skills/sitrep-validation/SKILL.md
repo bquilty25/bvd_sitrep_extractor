@@ -3,13 +3,13 @@ name: sitrep-validation
 description: "Update and validate against the Kraemer lab Ebola DRC 2026 reference dataset. Use when: updating the Kraemer submodule before rendering; the cross-source validation section is missing or stale; git submodule errors; understanding which Kraemer files feed the report; interpreting discrepancies between automated extraction and the Kraemer manually-coded data."
 ---
 
-# Kraemer Lab Validation Data
+# INRB-UMIE Validation Data
 
 The `Ebola_DRC_2026` git submodule (kraemer-lab/Ebola_DRC_2026) provides a manually-coded reference dataset that the report compares against automated extraction outputs in the "Cross-source validation" section.
 
 ## When to Use
 
-- Before rendering — to pull the latest Kraemer data so the validation section reflects current numbers
+- Before rendering — to pull the latest INRB-UMIE data so the validation section reflects current numbers
 - Diagnosing why the cross-source validation plots are stale or empty
 - Understanding a discrepancy flagged in the rendered report
 
@@ -57,11 +57,11 @@ The validation section overlays this extraction's values against Kraemer lab val
 
 | Observation | Meaning |
 |-------------|---------|
-| Lines overlap closely | Extraction and Kraemer agree — good |
-| Kraemer lags by 1–2 sitreps | Kraemer dataset not yet updated; re-run submodule update later |
+| Lines overlap closely | Extraction and INRB-UMIE agree — good |
+| INRB-UMIE lags by 1–2 sitreps | INRB-UMIE dataset not yet updated; re-run submodule update later |
 | Systematic offset for one zone | Possible zone name mismatch or aggregation difference; check `KRAEMER_NAME_MAP` |
-| Extraction higher than Kraemer | Extraction may be capturing aggregate rows that Kraemer excludes; check `is_aggregate` column in master CSV |
-| Large isolated spike | Likely a table parsing error in one sitrep; inspect `raw_extraction.json` for the outlier date |
+| Extraction higher than INRB-UMIE | Extraction may be capturing aggregate rows that INRB-UMIE excludes; check `is_aggregate` column in master CSV |
+| Large isolated spike | Likely a table parsing error in one sitrep; inspect `data/raw/<name>/raw_extraction.json` for the outlier date |
 
 ## Committing the Submodule Pin
 
@@ -69,9 +69,9 @@ After updating, the new commit hash should be committed with the rest of the pip
 
 ```bash
 git add Ebola_DRC_2026
-git commit -m "Update Kraemer submodule to YYYY-MM-DD build"
+git commit -m "Update INRB-UMIE submodule to YYYY-MM-DD build"
 # This can be combined with the report commit:
-# git commit -m "Add SitRep NNN, update Kraemer submodule, rebuild report"
+# git commit -m "Add SitRep NNN, update INRB-UMIE submodule, rebuild report"
 ```
 
 ## Error Table
@@ -82,4 +82,4 @@ git commit -m "Update Kraemer submodule to YYYY-MM-DD build"
 | `fatal: repository 'https://github.com/kraemer-lab/Ebola_DRC_2026' not found` | Network or GitHub auth issue | Check internet; re-authenticate with `gh auth login` if using HTTPS |
 | `Error in read_csv(...) : cannot open the connection` | CSV file missing from submodule | Submodule may be partially initialised; run `git submodule update --init --recursive` |
 | Cross-source section renders blank | Kraemer files exist but all rows filtered out | Check that `zone` values in Kraemer data match `ZONE_LEVELS` defined in `sitrep_report.qmd` |
-| Submodule is already up to date | Kraemer lab has not pushed a new build | Check https://github.com/kraemer-lab/Ebola_DRC_2026/commits for the latest build date |
+| Submodule is already up to date | INRB-UMIE has not pushed a new build | Check https://github.com/kraemer-lab/Ebola_DRC_2026/commits for the latest build date |

@@ -23,13 +23,13 @@ ours <- df_raw |>
     # National-level rows: zone=="Total" with no province, province=="Total"
     # with no zone, or both zone and province NA (un-labelled national total)
     (zone == "Total" | province == "Total" |
-       (is.na(zone) & is.na(province)))
+      (is.na(zone) & is.na(province)))
   ) |>
   mutate(
-    date      = dmy(count_end_date),
+    date = dmy(count_end_date),
     suspected = as.numeric(cases_suspect),
     confirmed = as.numeric(cases_confirmed),
-    deaths    = coalesce(
+    deaths = coalesce(
       as.numeric(deaths_suspected),
       as.numeric(deaths_probable),
       as.numeric(deaths_confirmed)
@@ -39,8 +39,8 @@ ours <- df_raw |>
     # taking the highest suspected count as a proxy for completeness.
     national_priority = case_when(
       province == "Total" ~ 3L,
-      zone == "Total"     ~ 2L,
-      TRUE                ~ 1L
+      zone == "Total" ~ 2L,
+      TRUE ~ 1L
     )
   ) |>
   group_by(date) |>
@@ -80,7 +80,7 @@ read_kraemer_national <- function(metric) {
       "Ebola_DRC_2026", "data", "insp_sitrep", "processed",
       paste0("insp_sitrep__national_cumulative_", metric, "__daily.csv")
     ),
-    col_types      = cols(.default = "c"),
+    col_types = cols(.default = "c"),
     show_col_types = FALSE
   ) |>
     mutate(date = parse_kraemer_date(date)) |>
@@ -116,23 +116,23 @@ kraemer_nat <- read_kraemer_national("suspected_cases") |>
 
 # ── 4. Join all three sources on date ────────────────────────────────────────
 comparison <- ours |>
-  full_join(bvd,        by = "date") |>
+  full_join(bvd, by = "date") |>
   full_join(kraemer_nat, by = "date") |>
   arrange(date) |>
   mutate(
     # Flag cells where sources disagree (ignoring NAs)
     flag_suspected = case_when(
-      !is.na(ours_suspected) & !is.na(bvd_suspected)    & ours_suspected != bvd_suspected    ~ "ours≠BVD",
+      !is.na(ours_suspected) & !is.na(bvd_suspected) & ours_suspected != bvd_suspected ~ "ours≠BVD",
       !is.na(ours_suspected) & !is.na(kraemer_suspected) & ours_suspected != kraemer_suspected ~ "ours≠Kraemer",
       TRUE ~ NA_character_
     ),
     flag_confirmed = case_when(
-      !is.na(ours_confirmed) & !is.na(bvd_confirmed)    & ours_confirmed != bvd_confirmed    ~ "ours≠BVD",
+      !is.na(ours_confirmed) & !is.na(bvd_confirmed) & ours_confirmed != bvd_confirmed ~ "ours≠BVD",
       !is.na(ours_confirmed) & !is.na(kraemer_confirmed) & ours_confirmed != kraemer_confirmed ~ "ours≠Kraemer",
       TRUE ~ NA_character_
     ),
     flag_deaths = case_when(
-      !is.na(ours_deaths) & !is.na(bvd_deaths)    & ours_deaths != bvd_deaths    ~ "ours≠BVD",
+      !is.na(ours_deaths) & !is.na(bvd_deaths) & ours_deaths != bvd_deaths ~ "ours≠BVD",
       !is.na(ours_deaths) & !is.na(kraemer_deaths) & ours_deaths != kraemer_deaths ~ "ours≠Kraemer",
       TRUE ~ NA_character_
     )

@@ -9,7 +9,7 @@ Renders the Quarto HTML situation report from the master CSVs and deploys it to 
 
 ## When to Use
 
-- After extraction has added new rows to `outputs/master_combined_counts.csv`
+- After extraction has added new rows to `data/processed/master_combined_counts.csv`
 - Diagnosing Quarto or R errors
 - Publishing the updated report (always confirm with user before `git push`)
 
@@ -19,7 +19,7 @@ Run from the **project root** (not from inside `scripts/`):
 
 ```bash
 cd /Users/billyquilty/Documents/Work/bvd_sitrep_extractor
-quarto render scripts/sitrep_report.qmd
+quarto render sitrep_report.qmd
 ```
 
 Output: `outputs/sitrep_report.html`  
@@ -47,7 +47,7 @@ Required packages: `tidyverse`, `lubridate`, `here`, `scales`, `ggrepel`, `flext
 ```bash
 # 1. Review what changed
 git status
-git diff --stat HEAD outputs/sitrep_report.html outputs/master_combined_counts.csv
+git diff --stat HEAD outputs/sitrep_report.html data/processed/master_combined_counts.csv
 
 # 2. Commit
 git add -A
@@ -66,22 +66,22 @@ After push, the GitHub Actions workflow (`.github/workflows/deploy-report-pages.
 | `there is no package called 'X'` | R package not installed | Run the dependency check command above |
 | `Error in library(X) : there is no package called 'X'` | Same | Same |
 | `quarto: command not found` | Quarto CLI not installed or not in PATH | `brew install quarto` or download from quarto.org; restart terminal |
-| `object 'X' not found` in R | Column renamed or missing in master CSV | Check column names in `outputs/master_combined_counts.csv`; compare against what `sitrep_report.qmd` expects |
+| `object 'X' not found` in R | Column renamed or missing in master CSV | Check column names in `data/processed/master_combined_counts.csv`; compare against what `sitrep_report.qmd` expects |
 | `Error in dmy(count_end_date)` | Malformed date in master CSV | Inspect `count_end_date` column for non-`DD/MM/YYYY` values; trace to the offending sitrep's `combined_counts.csv` |
 | `Quarto render error: ... execution halted` | R code chunk error | Read the full R traceback printed above it; fix the specific data issue |
 | `git push` rejected (non-fast-forward) | Remote has new commits | Run `git pull --rebase` then `git push` again |
 | `git push` authentication failure | HTTPS/SSH credentials expired | Run `gh auth login` (GitHub CLI) or re-add SSH key |
 | GitHub Pages not updating after push | CI workflow not triggered or failed | Check Actions tab: github.com/bquilty25/bvd_sitrep_extractor/actions |
-| Report renders but plots are empty | Master CSV has no rows for the expected date range | Verify `outputs/master_combined_counts.csv` has data with `head outputs/master_combined_counts.csv` |
+| Report renders but plots are empty | Master CSV has no rows for the expected date range | Verify `data/processed/master_combined_counts.csv` has data with `head data/processed/master_combined_counts.csv` |
 
 ## Key Files
 
 | File | Description |
 |------|-------------|
-| `scripts/sitrep_report.qmd` | Quarto source document |
+| `sitrep_report.qmd` | Quarto source document |
 | `_quarto.yml` | Project config — sets `output-dir: outputs` |
 | `outputs/sitrep_report.html` | Rendered output (git-tracked, deployed to GitHub Pages) |
-| `outputs/master_combined_counts.csv` | Primary data source for the report |
-| `outputs/master_response_counts.csv` | Patient movement data for the report |
-| `outputs/master_poe_counts.csv` | Points d'Entrée data for the report |
+| `data/processed/master_combined_counts.csv` | Primary data source for the report |
+| `data/processed/master_response_counts.csv` | Patient movement data for the report |
+| `data/processed/master_poe_counts.csv` | Points d'Entrée data for the report |
 | `.github/workflows/deploy-report-pages.yml` | CI/CD deploy workflow |

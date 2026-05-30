@@ -27,12 +27,12 @@ Run these four stages in order. Each has a dedicated skill — load it for deep 
 | Stage | Command | Skill |
 |-------|---------|-------|
 | 1. Fetch | `python3 scripts/fetch_sitreps.py` | `sitrep-fetch` |
-| 2. Extract | `python3 scripts/extract_sitrep.py --update --pdf-dir pdfs` | `sitrep-extract` |
-| 3. Kraemer | `git submodule update --remote Ebola_DRC_2026` | `sitrep-validation` |
-| 4. Render | `quarto render scripts/sitrep_report.qmd` | `sitrep-report` |
+| 2. Extract | `python3 scripts/extract_sitrep.py --update` | `sitrep-extract` |
+| 3. INRB-UMIE | `git submodule update --remote Ebola_DRC_2026` | `sitrep-validation` |
+| 4. Render | `quarto render sitrep_report.qmd` | `sitrep-report` |
 | 5. Deploy | `git add -A && git commit -m "..." && git push` | `sitrep-report` |
 
-**Skip stage 2 if fetch reports no new PDFs.** Run stage 3 regardless — Kraemer data updates independently of new sitreps. Skip stages 4–5 if neither extraction nor Kraemer data has changed.
+**Skip stage 2 if fetch reports no new PDFs.** Run stage 3 regardless — INRB-UMIE data updates independently of new sitreps. Skip stages 4–5 if neither extraction nor INRB-UMIE data has changed.
 
 ## Full Pipeline Sequence
 
@@ -45,17 +45,17 @@ set -a && source .env && set +a
 python3 scripts/fetch_sitreps.py
 
 # 3. Extract (only if new PDFs downloaded)
-python3 scripts/extract_sitrep.py --update --pdf-dir pdfs
+python3 scripts/extract_sitrep.py --update
 
-# 4. Update Kraemer reference data (always — updates independently of sitreps)
+# 4. Update INRB-UMIE reference data (always — updates independently of sitreps)
 git submodule update --remote Ebola_DRC_2026
 
-# 5. Render (if new extraction rows OR Kraemer data changed)
-quarto render scripts/sitrep_report.qmd
+# 5. Render (if new extraction rows OR INRB-UMIE data changed)
+quarto render sitrep_report.qmd
 
 # 6. Deploy — ALWAYS confirm with user before this step
 git add -A
-git commit -m "Add SitRep NNN (YYYY-MM-DD), update Kraemer, rebuild report"
+git commit -m "Add SitRep NNN (YYYY-MM-DD), update INRB-UMIE, rebuild report"
 git push
 ```
 
@@ -78,7 +78,7 @@ When a stage fails:
 - Edit scripts for small, clearly-scoped fixes (e.g., a regex or URL pattern change)
 
 **DO NOT:**
-- Modify or delete raw PDF files in `pdfs/`
+- Modify or delete raw PDF files in `data/raw/`
 - Delete rows from `outputs/master_*.csv`
 - Force-push (`git push --force`) or amend published commits
 - Modify `.env` directly (ask the user to update API keys)
