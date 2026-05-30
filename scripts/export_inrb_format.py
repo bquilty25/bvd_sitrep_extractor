@@ -13,22 +13,19 @@ where:
   - <metric> = one epidemiological variable per file
 
 Inputs (relative to project root):
-    outputs/master_combined_counts.csv
-    outputs/master_response_counts.csv   (optional)
-    outputs/master_poe_counts.csv        (optional)
-    outputs/sitreps/*/raw_extraction.json
+    data/processed/master_combined_counts.csv
+    data/processed/master_response_counts.csv   (optional)
+    data/processed/master_poe_counts.csv        (optional)
 
 Outputs:
-    data/raw/{sitrep_name}.json          — raw extraction JSON copies
-    data/processed/insp_sitrep__*.csv    — INRB-format per-metric files (20 files)
+    data/processed/insp_format/insp_sitrep__*.csv    — INRB-format per-metric files (20 files)
 
 Usage:
     python3 scripts/export_inrb_format.py
-    python3 scripts/export_inrb_format.py --output-dir outputs --data-dir data
+    python3 scripts/export_inrb_format.py --output-dir data/processed --data-dir data
 """
 
 import argparse
-import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -37,9 +34,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent.parent
 
 # ── Default I/O directories ─────────────────────────────────────────────────────
-_DEFAULT_OUTPUT_DIR = ROOT / "outputs"
-_DEFAULT_DATA_RAW   = ROOT / "data" / "raw"
-_DEFAULT_DATA_PROC  = ROOT / "data" / "processed"
+DEFAULT_OUTPUT_DIR  = ROOT / "data" / "processed"
+_DEFAULT_OUTPUT_DIR = DEFAULT_OUTPUT_DIR  # alias kept for backwards compat
+_DEFAULT_DATA_PROC  = ROOT / "data" / "processed" / "insp_format"
 
 # ── Zone names treated as national aggregates ───────────────────────────────────
 _NATIONAL_ZONE_NAMES = frozenset({
@@ -134,7 +131,7 @@ def _write_metric(
 
 def export_inrb_format(
     output_dir: Path = _DEFAULT_OUTPUT_DIR,
-    data_raw: Path   = _DEFAULT_DATA_RAW,
+    data_raw: Path   = None,  # unused; kept for backwards compat
     data_proc: Path  = _DEFAULT_DATA_PROC,
 ) -> None:
     """Export master CSVs into INRB-UMIE per-metric format.
@@ -143,32 +140,19 @@ def export_inrb_format(
     ----------
     output_dir : Path
         Directory containing master_combined_counts.csv, master_response_counts.csv,
-        master_poe_counts.csv, and the sitreps/ subdirectory.
+        and master_poe_counts.csv.
     data_raw : Path
-        Destination for raw JSON extraction copies.
+        Unused (raw JSONs are now written directly to data/raw/<name>/ by
+        extract_sitrep.py). Kept for backwards compatibility.
     data_proc : Path
         Destination for INRB-format per-metric CSV files.
     """
-    data_raw.mkdir(parents=True, exist_ok=True)
     data_proc.mkdir(parents=True, exist_ok=True)
 
     print("\nExporting INRB-format data …")
     print(f"  → {data_proc}/\n")
 
-    # ── 1. Copy raw extraction JSONs ─────────────────────────────────────────
-    sitreps_dir = output_dir / "sitreps"
-    n_raw = 0
-    if sitreps_dir.exists():
-        for sitrep_dir in sorted(sitreps_dir.iterdir()):
-            if not sitrep_dir.is_dir():
-                continue
-            json_src = sitrep_dir / "raw_extraction.json"
-            if json_src.exists():
-                shutil.copy2(json_src, data_raw / f"{sitrep_dir.name}.json")
-                n_raw += 1
-    print(f"  data/raw/  ← {n_raw} raw JSON(s) copied\n")
-
-    # ── 2. Case / death / contacts — from master_combined_counts.csv ─────────
+    # ── 1. Case / death / contacts — from master_combined_counts.csv ─────────
     combined_path = output_dir / "master_combined_counts.csv"
     if not combined_path.exists():
         print(f"  WARNING: {combined_path} not found — skipping case/death/contacts export.")
@@ -227,7 +211,7 @@ def export_inrb_format(
             vals = nat_cum[src_col].apply(_to_nd)
             _write_metric(nat_cum["nom"], nat_cum["date"], vals, metric_col, data_proc / filename)
 
-    # ── 3. Response metrics — from master_response_counts.csv ────────────────
+    # ── 2. Response metrics — from master_response_counts.csv ────────────────
     resp_path = output_dir / "master_response_counts.csv"
     if not resp_path.exists():
         print(f"\n  WARNING: {resp_path} not found — skipping response export.")
@@ -240,7 +224,7 @@ def export_inrb_format(
                 vals = resp[src_col].apply(_to_nd)
                 _write_metric(resp["nom"], resp["date"], vals, metric_col, data_proc / filename)
 
-    # ── 4. PoE metrics — from master_poe_counts.csv ───────────────────────────
+    # ── 3. PoE metrics — from master_poe_counts.csv ───────────────────────────
     poe_path = output_dir / "master_poe_counts.csv"
     if not poe_path.exists():
         print(f"\n  WARNING: {poe_path} not found — skipping PoE export.")
@@ -264,13 +248,13 @@ def _parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        default=str(_DEFAULT_OUTPUT_DIR),
-        help=f"Directory containing master CSVs and sitreps/ (default: {_DEFAULT_OUTPUT_DIR})",
+        default=str(DEFAULT_OUTPUT_DIR),
+        help=f"Directory containing master CSVs (default: {DEFAULT_OUTPUT_DIR})",
     )
     parser.add_argument(
         "--data-dir",
         default=str(ROOT / "data"),
-        help=f"Root of data/ directory; raw/ and processed/ are created here (default: {ROOT / 'data'})",
+        help=f"Root of data/ directory; insp_format/ is created under processed/ here (default: {ROOT / 'data'})",
     )
     return parser.parse_args()
 
@@ -280,6 +264,5 @@ if __name__ == "__main__":
     data_root = Path(args.data_dir).expanduser().resolve()
     export_inrb_format(
         output_dir=Path(args.output_dir).expanduser().resolve(),
-        data_raw=data_root / "raw",
-        data_proc=data_root / "processed",
+        data_proc=data_root / "processed" / "insp_format",
     )

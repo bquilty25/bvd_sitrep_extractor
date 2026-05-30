@@ -38,7 +38,7 @@ ALL_EXPECTED_FILENAMES: list[str] = (
     + [t[2] for t in _RESPONSE_AND_POE_TUPLES]
 )
 
-DATA_PROCESSED = Path(__file__).parent.parent / "data" / "processed"
+DATA_PROCESSED = Path(__file__).parent.parent / "data" / "processed" / "insp_format"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Unit tests — pure helpers

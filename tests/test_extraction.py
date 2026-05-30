@@ -30,26 +30,29 @@ from extract_sitrep import (
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 
-OUTPUTS = Path(__file__).parent.parent / "outputs"
+DATA_PROCESSED = Path(__file__).parent.parent / "data" / "processed"
+DATA_RAW       = Path(__file__).parent.parent / "data" / "raw"
 
 
-def _find_latest_output_dir(outputs_root: Path) -> Path | None:
-    """Return the most recently processed sitrep subdirectory, or None."""
+def _find_latest_output_dir(epicentre_dir: Path) -> Path | None:
+    """Return the most recently modified sitrep subdirectory under epicentre_format/, or None."""
+    if not epicentre_dir.exists():
+        return None
     candidates = [
-        d for d in outputs_root.iterdir()
-        if d.is_dir() and (d / "raw_extraction.json").exists()
+        d for d in epicentre_dir.iterdir()
+        if d.is_dir() and (d / "combined_counts.csv").exists()
     ]
     return (
-        max(candidates, key=lambda d: (d / "raw_extraction.json").stat().st_mtime)
+        max(candidates, key=lambda d: (d / "combined_counts.csv").stat().st_mtime)
         if candidates else None
     )
 
 
-_SAMPLE_DIR   = _find_latest_output_dir(OUTPUTS)
-RAW_JSON      = (_SAMPLE_DIR / "raw_extraction.json")     if _SAMPLE_DIR else (OUTPUTS / "raw_extraction.json")
-NEW_CASES_CSV = (_SAMPLE_DIR / "new_cases_counts.csv")  if _SAMPLE_DIR else (OUTPUTS / "new_cases_counts.csv")
-CUMUL_CSV     = (_SAMPLE_DIR / "cumulative_counts.csv") if _SAMPLE_DIR else (OUTPUTS / "cumulative_counts.csv")
-COMBINED_CSV  = (_SAMPLE_DIR / "combined_counts.csv")   if _SAMPLE_DIR else (OUTPUTS / "combined_counts.csv")
+_SAMPLE_DIR   = _find_latest_output_dir(DATA_PROCESSED / "epicentre_format")
+RAW_JSON      = (DATA_RAW / _SAMPLE_DIR.name / "raw_extraction.json") if _SAMPLE_DIR else (DATA_RAW / "raw_extraction.json")
+NEW_CASES_CSV = (_SAMPLE_DIR / "new_cases_counts.csv")  if _SAMPLE_DIR else (DATA_PROCESSED / "epicentre_format" / "new_cases_counts.csv")
+CUMUL_CSV     = (_SAMPLE_DIR / "cumulative_counts.csv") if _SAMPLE_DIR else (DATA_PROCESSED / "epicentre_format" / "cumulative_counts.csv")
+COMBINED_CSV  = (_SAMPLE_DIR / "combined_counts.csv")   if _SAMPLE_DIR else (DATA_PROCESSED / "epicentre_format" / "combined_counts.csv")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -678,9 +681,9 @@ class TestCombinedContent:
 # ─────────────────────────────────────────────────────────────────────────────
 
 PDF_DIR        = Path(__file__).parent.parent / "pdfs"
-SITREPS_DIR    = OUTPUTS / "sitreps"
-PROCESSED_JSON = OUTPUTS / "processed.json"
-MASTER_CSV     = OUTPUTS / "master_combined_counts.csv"
+SITREPS_DIR    = DATA_PROCESSED / "epicentre_format"
+PROCESSED_JSON = DATA_PROCESSED / "processed.json"
+MASTER_CSV     = DATA_PROCESSED / "master_combined_counts.csv"
 KRAEMER_LONG   = Path(__file__).parent.parent / "Ebola_DRC_2026" / "build" / "long"
 
 
@@ -691,7 +694,7 @@ class TestPipelineStatus:
         if not PDF_DIR.exists():
             pytest.skip("pdfs/ directory not found")
         if not PROCESSED_JSON.exists():
-            pytest.skip("outputs/processed.json not found — run extract_sitrep.py first")
+            pytest.skip("data/processed/processed.json not found — run extract_sitrep.py first")
 
         with open(PROCESSED_JSON, encoding="utf-8") as fh:
             processed = json.load(fh)

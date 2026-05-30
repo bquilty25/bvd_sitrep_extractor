@@ -33,7 +33,7 @@ set_flextable_defaults(
 ```{r}
 #| label: load-data
 df_raw <- read_csv(
-  here::here("outputs", "master_combined_counts.csv"),
+  here::here("data", "processed", "master_combined_counts.csv"),
   col_types       = cols(.default = "c"),
   show_col_types  = FALSE
 )
@@ -345,7 +345,7 @@ kraemer_poe <- read_kraemer_long("insp_sitrep__total_poe_passed") |>
 # BVDOutbreakSize PDF-scanned national reference (SitReps 009-012, 23-26 May)
 # Source: github.com/epiforecasts/BVDOutbreakSize PR #140
 bvd_ref <- read_csv(
-  here::here("outputs", "bvd_outbreak_size_national_reference.csv"),
+  here::here("data", "processed", "bvd_outbreak_size_national_reference.csv"),
   col_types      = cols(.default = "c"),
   show_col_types = FALSE
 ) |>
@@ -771,7 +771,7 @@ full_join(ours_latest, kraemer_latest, by = "zone") |>
 ```{r}
 #| label: load-response-ours
 resp_ours <- read_csv(
-  here::here("outputs", "master_response_counts.csv"),
+  here::here("data", "processed", "master_response_counts.csv"),
   col_types      = cols(.default = "c"),
   show_col_types = FALSE
 ) |>
@@ -786,7 +786,7 @@ resp_ours <- read_csv(
   filter(!is.na(zone), !zone %in% c("Total"))
 
 poe_ours <- read_csv(
-  here::here("outputs", "master_poe_counts.csv"),
+  here::here("data", "processed", "master_poe_counts.csv"),
   col_types      = cols(.default = "c"),
   show_col_types = FALSE
 ) |>

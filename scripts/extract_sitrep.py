@@ -6,11 +6,11 @@ Extracts two tables from an INSP DRC situation report PDF using the Anthropic AP
   - new_cases  : the very first table (new / recent cases)
   - cumulative : Table 3 (données cumulatives)
 
-Outputs (written to --output-dir, default ./outputs):
+Outputs (written to --output-dir, default ./data/processed):
   new_cases_counts.csv
   cumulative_counts.csv
   combined_counts.csv
-  raw_extraction.json      (raw Claude JSON, useful for auditing / re-testing)
+  raw_extraction.json      (raw Claude JSON, useful for auditing / re-testing; written to data/raw/<name>/)
 
 Usage:
   export ANTHROPIC_API_KEY="sk-ant-..."
@@ -33,6 +33,7 @@ import pandas as pd
 
 # ── Sibling-script import: export_inrb_format lives in the same scripts/ dir ───
 _SCRIPTS_DIR = Path(__file__).resolve().parent
+_PROJECT_ROOT = _SCRIPTS_DIR.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 try:
@@ -716,7 +717,10 @@ def save_outputs(
         )
 
     # ── Raw JSON (for auditing / re-running tests without an API call)
-    with open(output_dir / "raw_extraction.json", "w", encoding="utf-8") as fh:
+    # Written to data/raw/<sitrep_name>/raw_extraction.json (gitignored)
+    raw_dir = _PROJECT_ROOT / "data" / "raw" / output_dir.name
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    with open(raw_dir / "raw_extraction.json", "w", encoding="utf-8") as fh:
         json.dump(raw_data, fh, ensure_ascii=False, indent=2)
 
 
@@ -814,9 +818,9 @@ def save_processed(path: Path, processed: dict) -> None:
 
 def _run_rebuild(output_dir: Path) -> None:
     """Rebuild all master CSVs from scratch by reading every per-sitrep output directory."""
-    sitreps_dir = output_dir / "sitreps"
+    sitreps_dir = output_dir / "epicentre_format"
     if not sitreps_dir.exists():
-        sys.exit(f"Error: sitreps directory not found at {sitreps_dir}")
+        sys.exit(f"Error: epicentre_format directory not found at {sitreps_dir}")
 
     combined_dfs: list[pd.DataFrame] = []
     response_dfs: list[pd.DataFrame] = []
@@ -869,6 +873,7 @@ def _run_rebuild(output_dir: Path) -> None:
     n_sitreps = len(combined_dfs)
     print(f"\nRebuilt from {n_sitreps} sitrep director{'y' if n_sitreps == 1 else 'ies'} "
           f"under {sitreps_dir}/")
+    print(f"Master CSVs written to: {output_dir}/")
 
     if _HAS_INRB_EXPORT:
         _export_inrb_format(output_dir=output_dir)
@@ -1011,7 +1016,7 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     all_poe = []
     for i, pdf_path in enumerate(new_pdfs, 1):
         stem = _canonical_output_stem(pdf_path, pdf_dir)
-        per_dir = output_dir / "sitreps" / stem
+        per_dir = output_dir / "epicentre_format" / stem
         combined_df, _, _, _, response_df, poe_df = _process_one(
             client, pdf_path, per_dir, label=f"{i}/{len(new_pdfs)}"
         )
@@ -1048,7 +1053,7 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     print(f"  New rows added : {len(new_rows_df)}")
     print(f"  Master total   : {len(master_df)} rows")
     print("\u2550" * 55)
-    print(f"\nOutputs written to: {output_dir}/sitreps/")
+    print(f"\nOutputs written to: {output_dir}/epicentre_format/")
 
     if _HAS_INRB_EXPORT:
         _export_inrb_format(output_dir=output_dir)
@@ -1081,15 +1086,15 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir", "-o",
-        default="outputs",
+        default="data/processed",
         metavar="DIR",
-        help="Directory for output files (default: ./outputs).",
+        help="Directory for output files (default: ./data/processed).",
     )
     parser.add_argument(
         "--update",
         action="store_true",
         help=(
-            "Process all PDFs in --pdf-dir not yet in outputs/processed.json "
+            "Process all PDFs in --pdf-dir not yet in data/processed/processed.json "
             "and append rows to the master linelist."
         ),
     )
@@ -1105,7 +1110,7 @@ def main() -> None:
         help=(
             "Rebuild master_combined_counts.csv (and master_response/poe CSVs) "
             "from scratch by reading every per-sitrep directory under "
-            "outputs/sitreps/. No API key required."
+            "data/processed/epicentre_format/. No API key required."
         ),
     )
     args = parser.parse_args()
@@ -1157,7 +1162,7 @@ def main() -> None:
     if n == 1:
         # ── Single-PDF: save to per-sitrep subfolder (consistent with --update)
         stem = _canonical_output_stem(pdf_paths[0], pdf_paths[0].parent)
-        per_dir = output_dir / "sitreps" / stem
+        per_dir = output_dir / "epicentre_format" / stem
         combined_df, data, new_cases_df, cumulative_df, response_df, poe_df = _process_one(
             client, pdf_paths[0], per_dir
         )

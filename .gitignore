@@ -27,9 +27,6 @@ Thumbs.db
 
 /.quarto/
 **/*.quarto_ipynb
-outputs/combined_counts.csv
-outputs/cumulative_counts.csv
-outputs/new_cases_counts.csv
-outputs/poe_counts.csv
-outputs/raw_extraction.json
+outputs/*.csv
+outputs/*.json
 .Rproj.user

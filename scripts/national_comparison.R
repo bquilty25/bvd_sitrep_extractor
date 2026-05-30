@@ -11,7 +11,7 @@ library(lubridate)
 
 # ── 1. This repo: national aggregate Cumules rows ─────────────────────────────
 df_raw <- read_csv(
-  here::here("outputs", "master_combined_counts.csv"),
+  here::here("data", "processed", "master_combined_counts.csv"),
   col_types      = cols(.default = "c"),
   show_col_types = FALSE
 )
@@ -56,7 +56,7 @@ ours <- df_raw |>
 
 # ── 2. BVDOutbreakSize PDF-scanned reference ───────────────────────────────────
 bvd <- read_csv(
-  here::here("outputs", "bvd_outbreak_size_national_reference.csv"),
+  here::here("data", "processed", "bvd_outbreak_size_national_reference.csv"),
   col_types      = cols(.default = "c"),
   show_col_types = FALSE
 ) |>
@@ -139,6 +139,6 @@ comparison <- ours |>
   )
 
 # ── 5. Output ─────────────────────────────────────────────────────────────────
-write_csv(comparison, here::here("outputs", "national_comparison.csv"))
-message("Wrote ", nrow(comparison), " rows to outputs/national_comparison.csv")
+write_csv(comparison, here::here("data", "processed", "national_comparison.csv"))
+message("Wrote ", nrow(comparison), " rows to data/processed/national_comparison.csv")
 print(comparison)

@@ -41,8 +41,8 @@ python3 scripts/extract_sitrep.py --update
 
 What this does:
 - Downloads new SitRep PDFs to `pdfs/`
-- Skips already processed files using `outputs/processed.json`
-- Appends new rows to `outputs/master_combined_counts.csv`
+- Skips already processed files using `data/processed/processed.json`
+- Appends new rows to `data/processed/master_combined_counts.csv`
 
 ## Other Common Commands
 
@@ -73,17 +73,24 @@ pytest tests/ -v
 
 ## Outputs
 
-Per SitRep (`outputs/sitreps/<sitrep_name>/`):
+Per SitRep (`data/processed/epicentre_format/<sitrep_name>/`):
 - `new_cases_counts.csv`
 - `cumulative_counts.csv`
 - `combined_counts.csv`
+
+Raw extraction JSONs (`data/raw/<sitrep_name>/`, gitignored):
 - `raw_extraction.json`
 
-Master files (`outputs/`):
+Master aggregate files (`data/processed/`):
 - `master_combined_counts.csv`
 - `master_response_counts.csv`
 - `master_poe_counts.csv`
 - `processed.json`
+
+INRB-UMIE format files (`data/processed/insp_format/`):
+- `insp_sitrep__*.csv` (20 per-metric files)
+
+Report (`outputs/`):
 - `sitrep_report.html`
 
 PDF archive:
