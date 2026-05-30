@@ -40,7 +40,7 @@ python3 scripts/extract_sitrep.py --update
 ```
 
 What this does:
-- Downloads new SitRep PDFs to `pdfs/`
+- Downloads new SitRep PDFs to `data/raw/<sitrep_name>/`
 - Skips already processed files using `data/processed/processed.json`
 - Appends new rows to `data/processed/master_combined_counts.csv`
 
@@ -78,8 +78,10 @@ Per SitRep (`data/processed/epicentre_format/<sitrep_name>/`):
 - `cumulative_counts.csv`
 - `combined_counts.csv`
 
-Raw extraction JSONs (`data/raw/<sitrep_name>/`, gitignored):
+Raw extraction JSONs and PDFs (`data/raw/<sitrep_name>/`, gitignored):
 - `raw_extraction.json`
+- `<sitrep_name>.pdf`
+- `manifest.json` (at `data/raw/` root)
 
 Master aggregate files (`data/processed/`):
 - `master_combined_counts.csv`
@@ -92,10 +94,6 @@ INRB-UMIE format files (`data/processed/insp_format/`):
 
 Report (`outputs/`):
 - `sitrep_report.html`
-
-PDF archive:
-- `pdfs/` (gitignored)
-- `pdfs/manifest.json`
 
 ## Core Configuration
 

@@ -1003,7 +1003,7 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     processed_path = output_dir / "processed.json"
     processed = load_processed(processed_path)
 
-    all_pdfs = sorted(pdf_dir.glob("*.pdf"))
+    all_pdfs = sorted(pdf_dir.glob("**/*.pdf"))
     new_pdfs = [p for p in all_pdfs if p.name not in processed]
 
     if not new_pdfs:
@@ -1100,9 +1100,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--pdf-dir",
-        default="pdfs",
+        default="data/raw",
         metavar="DIR",
-        help="Archived PDF directory used with --update (default: ./pdfs).",
+        help="Archived PDF directory used with --update (default: ./data/raw).",
     )
     parser.add_argument(
         "--rebuild",

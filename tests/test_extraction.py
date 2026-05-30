@@ -680,7 +680,7 @@ class TestCombinedContent:
 # 4. PIPELINE STATUS TESTS  (unprocessed PDFs)
 # ─────────────────────────────────────────────────────────────────────────────
 
-PDF_DIR        = Path(__file__).parent.parent / "pdfs"
+PDF_DIR        = Path(__file__).parent.parent / "data" / "raw"
 SITREPS_DIR    = DATA_PROCESSED / "epicentre_format"
 PROCESSED_JSON = DATA_PROCESSED / "processed.json"
 MASTER_CSV     = DATA_PROCESSED / "master_combined_counts.csv"
@@ -692,21 +692,21 @@ class TestPipelineStatus:
 
     def test_no_unprocessed_pdfs(self):
         if not PDF_DIR.exists():
-            pytest.skip("pdfs/ directory not found")
+            pytest.skip("data/raw/ directory not found")
         if not PROCESSED_JSON.exists():
             pytest.skip("data/processed/processed.json not found — run extract_sitrep.py first")
 
         with open(PROCESSED_JSON, encoding="utf-8") as fh:
             processed = json.load(fh)
 
-        canonical_pdfs = sorted(p.name for p in PDF_DIR.glob("MVE_SitRep_*.pdf"))
+        canonical_pdfs = sorted(p.name for p in PDF_DIR.glob("**/MVE_SitRep_*.pdf"))
         if not canonical_pdfs:
-            pytest.skip("No canonical PDFs found in pdfs/")
+            pytest.skip("No canonical PDFs found in data/raw/")
 
         unprocessed = [name for name in canonical_pdfs if name not in processed]
         assert not unprocessed, (
             f"{len(unprocessed)} downloaded PDF(s) not yet extracted — "
-            f"run: python3 scripts/extract_sitrep.py --update --pdf-dir pdfs\n"
+            f"run: python3 scripts/extract_sitrep.py --update\n"
             + "\n".join(f"  {name}" for name in unprocessed)
         )
 

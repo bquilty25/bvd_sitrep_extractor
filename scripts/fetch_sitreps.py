@@ -8,8 +8,8 @@ Scrapes the INSP website for PDF links and downloads any not already present.
 A manifest.json in the archive directory tracks what has been downloaded and when.
 
 Usage:
-  python3 fetch_sitreps.py                    # scan default pages, download to ./pdfs/
-  python3 fetch_sitreps.py --pdf-dir archive/ # use a custom archive directory
+  python3 fetch_sitreps.py                        # scan default pages, download to ./data/raw/
+  python3 fetch_sitreps.py --pdf-dir archive/     # use a custom archive directory
   python3 fetch_sitreps.py --pages https://insp.cd/ebola/ https://insp.cd/category/sitrep/
 
 Daily workflow (run both together):
@@ -167,9 +167,9 @@ def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
 
 
 def _existing_checksums(pdf_dir: Path) -> dict:
-    """Return {md5_hex: filename} for all PDFs already present in pdf_dir."""
+    """Return {md5_hex: filename} for all PDFs already present under pdf_dir (recursive)."""
     checksums: dict = {}
-    for p in pdf_dir.glob("*.pdf"):
+    for p in pdf_dir.glob("**/*.pdf"):
         try:
             checksums[hashlib.md5(p.read_bytes()).hexdigest()] = p.name
         except OSError:
@@ -198,13 +198,14 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
     Returns (is_new, local_path).
     """
     original_filename = unquote(Path(urlparse(url).path).name)
-    dest = pdf_dir / original_filename
 
-    if url in manifest and dest.exists():
-        return False, dest
-    # Also check if a canonical rename already covers this URL
-    if url in manifest and (pdf_dir / manifest[url].get("filename", "")).exists():
-        return False, pdf_dir / manifest[url]["filename"]
+    # Check if already in manifest and file exists in its per-sitrep subdir
+    if url in manifest:
+        entry = manifest[url]
+        fname = entry.get("canonical_name") or entry.get("filename", original_filename)
+        fname_path = pdf_dir / Path(fname).stem / fname
+        if fname_path.exists():
+            return False, fname_path
 
     print(f"  ↓  {original_filename}")
     if title:
@@ -215,12 +216,12 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
         resp.raise_for_status()
     except requests.RequestException as exc:
         print(f"     Warning: download failed — {exc}", file=sys.stderr)
-        return False, dest
+        return False, pdf_dir / original_filename
 
     ct = resp.headers.get("Content-Type", "")
     if "pdf" not in ct.lower() and not original_filename.lower().endswith(".pdf"):
         print(f"     Warning: unexpected Content-Type '{ct}' — skipping", file=sys.stderr)
-        return False, dest
+        return False, pdf_dir / original_filename
 
     # Derive canonical name from the sitrep number + upload date when possible
     uploaded_at = _parse_last_modified(resp.headers.get("Last-Modified", ""))
@@ -229,11 +230,11 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
     if num:
         filename = _canonical_filename(num, date_str)
         # Avoid overwriting a different PDF that already claimed this canonical name
-        candidate = pdf_dir / filename
+        candidate = pdf_dir / Path(filename).stem / filename
         counter = 2
         while candidate.exists():
             filename = _canonical_filename(num, date_str).replace(".pdf", f"_v{counter}.pdf")
-            candidate = pdf_dir / filename
+            candidate = pdf_dir / Path(filename).stem / filename
             counter += 1
     else:
         filename = original_filename
@@ -256,10 +257,14 @@ def download_pdf(url: str, pdf_dir: Path, manifest: dict,
             "size_bytes": len(resp.content),
             "duplicate_of": duplicate_of,
         }
-        return False, pdf_dir / duplicate_of
+        dup_matches = list(pdf_dir.glob(f"**/{duplicate_of}"))
+        return False, dup_matches[0] if dup_matches else pdf_dir / duplicate_of
 
-    dest = pdf_dir / filename
-    pdf_dir.mkdir(parents=True, exist_ok=True)
+    # Write PDF to its own subdir: data/raw/<stem>/<filename>
+    stem = Path(filename).stem
+    dest_dir = pdf_dir / stem
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / filename
     dest.write_bytes(resp.content)
     manifest[url] = {
         "filename": filename,
@@ -288,9 +293,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--pdf-dir",
-        default="pdfs",
+        default="data/raw",
         metavar="DIR",
-        help="Local archive directory for downloaded PDFs (default: ./pdfs).",
+        help="Local archive directory for downloaded PDFs (default: ./data/raw).",
     )
     parser.add_argument(
         "--pages",
@@ -359,7 +364,7 @@ def main() -> None:
         print(f"  {new_count} new PDF(s) downloaded → {pdf_dir}/")
         print(f"  Total archived : {len(manifest)} PDF(s)")
         print(f"\nRun extraction to update the master counts table:")
-        print(f"  python3 extract_sitrep.py --update --pdf-dir {pdf_dir}")
+        print(f"  python3 extract_sitrep.py --update")
     else:
         print(f"  No new PDFs — archive is up to date ({len(manifest)} PDF(s) total).")
 

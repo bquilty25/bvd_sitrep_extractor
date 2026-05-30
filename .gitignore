@@ -12,10 +12,9 @@ build/
 venv/
 env/
 
-# PDF archive (large binary files — store locally, do not commit)
+# PDF archive and raw extraction files (large; regenerated from PDFs on demand)
+# Exception: manifest.json is tracked (kept in data/raw/ but not committed since data/raw/ is ignored)
 pdfs/
-
-# Raw extraction JSONs (large; regenerated from PDFs on demand)
 data/raw/
 
 # Slide assets — large PNG images stored locally, not committed
