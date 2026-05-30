@@ -730,7 +730,7 @@ class TestExtractionSchema:
 
     def test_all_sitrep_combined_csvs_have_correct_schema(self):
         if not SITREPS_DIR.exists():
-            pytest.skip("outputs/sitreps/ not found")
+            pytest.skip("data/processed/epicentre_format/ not found")
         bad = []
         for d in sorted(SITREPS_DIR.iterdir()):
             csv = d / "combined_counts.csv"
@@ -792,14 +792,14 @@ _MAX_CONFIRMED_DIVERGENCE = 5
 
 
 class TestKraemerDivergence:
-    """Flag when automated extraction diverges significantly from the Kraemer lab reference data."""
+    """Flag when automated extraction diverges significantly from the INRB-UMIE reference data."""
 
     @pytest.fixture(scope="class")
     def kraemer_confirmed(self):
         csv = KRAEMER_LONG / "insp_sitrep__cumulative_confirmed_cases.csv"
         if not csv.exists():
             pytest.skip(
-                "Kraemer data not found — run: "
+                "INRB-UMIE data not found — run: "
                 "git submodule update --init Ebola_DRC_2026"
             )
         df = pd.read_csv(csv, dtype=str)
@@ -824,11 +824,11 @@ class TestKraemerDivergence:
 
     def test_kraemer_submodule_has_data(self, kraemer_confirmed):
         assert len(kraemer_confirmed) > 0, (
-            "Kraemer confirmed cases CSV is empty — submodule may not be initialised"
+            "INRB-UMIE confirmed cases CSV is empty — submodule may not be initialised"
         )
 
     def test_extraction_zones_known_to_kraemer(self, kraemer_confirmed, extraction_confirmed):
-        """Zones present in extraction but absent from Kraemer may indicate a new area
+        """Zones present in extraction but absent from INRB-UMIE may indicate a new area
         or a garbled zone name — emit a warning rather than a hard failure."""
         import warnings
         kraemer_zones    = set(kraemer_confirmed["zone"].unique())
@@ -838,7 +838,7 @@ class TestKraemerDivergence:
         unknown = extraction_zones - kraemer_zones
         if unknown:
             warnings.warn(
-                f"Extraction has zone(s) not (yet) in Kraemer data — "
+                f"Extraction has zone(s) not (yet) in INRB-UMIE data — "
                 f"may be new outbreak areas or name mismatches: {sorted(unknown)}",
                 UserWarning,
                 stacklevel=2,
@@ -860,7 +860,7 @@ class TestKraemerDivergence:
         )
         if merged.empty:
             pytest.skip(
-                "No overlapping (zone, date) pairs between extraction and Kraemer — "
+                "No overlapping (zone, date) pairs between extraction and INRB-UMIE — "
                 "check that both datasets cover the same date range"
             )
 

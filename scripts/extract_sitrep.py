@@ -976,7 +976,7 @@ def append_to_master_generic(
 
 
 def _canonical_output_stem(pdf_path: Path, pdf_dir: Path) -> str:
-    """Return the canonical folder stem for a PDF (from pdfs/manifest.json if available)."""
+    """Return the canonical folder stem for a PDF (from data/raw/manifest.json if available)."""
     manifest_path = pdf_dir / "manifest.json"
     if manifest_path.exists():
         try:
@@ -993,7 +993,7 @@ def _canonical_output_stem(pdf_path: Path, pdf_dir: Path) -> str:
 
 
 def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) -> None:
-    """Process every PDF in pdf_dir not yet recorded in outputs/processed.json."""
+    """Process every PDF in pdf_dir not yet recorded in data/processed/processed.json."""
     if not pdf_dir.exists():
         sys.exit(
             f"Error: --pdf-dir '{pdf_dir}' does not exist.\n"

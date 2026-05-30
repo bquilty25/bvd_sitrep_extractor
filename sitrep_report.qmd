@@ -583,7 +583,7 @@ zone_sum_vs_nat |>
 
 ### Data quality notes — case counts
 
-Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the Kraemer data; this is a gap in zone-level reporting, not a sign that cases only began in May.
+Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the INRB-UMIE data; this is a gap in zone-level reporting, not a sign that cases only began in May.
 
 Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
 
@@ -718,7 +718,7 @@ p <- (p_nat | p_zones) +
   ) &
   theme(legend.position = "bottom")
 ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, height = 14, dpi = 300)
-knitr::include_graphics(here("outputs", "plots", "fig-comparison.png"))
+p
 ```
 
 Table 2 presents numerical differences at the most recent date available in each source for each zone.
@@ -866,7 +866,7 @@ p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = sour
   )
 ggsave(here("outputs", "plots", "fig-comparison-response.png"), plot = p,
        width = 12, height = 9, dpi = 300)
-knitr::include_graphics(here("outputs", "plots", "fig-comparison-response.png"))
+p
 ```
 
 ```{r}
@@ -914,7 +914,7 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
   )
 ggsave(here("outputs", "plots", "fig-comparison-poe.png"), plot = p,
        width = 9, height = 6, dpi = 300)
-knitr::include_graphics(here("outputs", "plots", "fig-comparison-poe.png"))
+p
 ```
 
 ```{r}
@@ -975,7 +975,7 @@ p <- ggplot(contacts_comp,
   )
 ggsave(here("outputs", "plots", "fig-comparison-contacts.png"), plot = p,
        width = 11, height = 7, dpi = 300)
-knitr::include_graphics(here("outputs", "plots", "fig-comparison-contacts.png"))
+p
 ```
 
 ## Discussion

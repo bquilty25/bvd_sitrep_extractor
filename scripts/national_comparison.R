@@ -2,8 +2,8 @@
 # Cross-source comparison of national cumulative totals across three sources:
 #   1. This repo's automated extraction (master_combined_counts.csv)
 #   2. BVDOutbreakSize PDF-scanned reference (bvd_outbreak_size_national_reference.csv)
-#   3. Kraemer lab national cumulative files (Ebola_DRC_2026 submodule)
-# Outputs: outputs/national_comparison.csv
+#   3. INRB-UMIE national cumulative files (Ebola_DRC_2026 submodule)
+# Outputs: data/processed/national_comparison.csv
 
 library(tidyverse)
 library(here)
@@ -69,7 +69,7 @@ bvd <- read_csv(
   ) |>
   transmute(date, bvd_sitrep, bvd_suspected, bvd_confirmed, bvd_deaths, bvd_notes = notes)
 
-# ── 3. Kraemer lab: national cumulative files ─────────────────────────────────
+# ── 3. INRB-UMIE: national cumulative files ──────────────────────────────────
 parse_kraemer_date <- function(x) {
   coalesce(dmy(x, quiet = TRUE), ymd(x, quiet = TRUE), mdy(x, quiet = TRUE))
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render each PDF in pdfs/ to per-page PNG images and build a collage.
+"""Render each PDF in data/raw/ to per-page PNG images and build a collage.
 
 Each PDF becomes one horizontal row in the collage (pages tiled left→right).
 Rows are stacked top→bottom, one per SitRep in ascending order.
@@ -19,7 +19,7 @@ from pdf2image import convert_from_path
 from PIL import Image
 
 REPO_ROOT = Path(__file__).parent.parent
-PDFS_DIR = REPO_ROOT / "pdfs"
+PDFS_DIR = REPO_ROOT / "data" / "raw"
 ASSETS_DIR = REPO_ROOT / "assets" / "images"
 PAGES_DIR = ASSETS_DIR / "sitrep_pages"
 COLLAGE_PATH = ASSETS_DIR / "sitrep_collage.png"
@@ -94,9 +94,11 @@ def main() -> None:
 
     row_images = []
     for entry in entries:
-        pdf_file = PDFS_DIR / entry["filename"]
+        fn = entry["filename"]
+        stem = Path(fn).stem
+        pdf_file = PDFS_DIR / stem / fn
         if not pdf_file.exists():
-            print(f"Skipping missing: {pdf_file.name}")
+            print(f"Skipping missing: {fn}")
             continue
 
         name = pdf_file.stem

@@ -1,6 +1,6 @@
 ---
 name: sitrep-extract
-description: "Extract epidemiological tables from MVE SitRep PDFs using Claude Vision API. Use when: running extraction on new PDFs; Claude API errors (auth, rate limit, timeout, JSON parse failure); understanding extraction output files; re-extracting a specific PDF; diagnosing missing, wrong, or rejected table data; outputs/processed.json or master CSVs are out of sync."
+description: "Extract epidemiological tables from MVE SitRep PDFs using Claude Vision API. Use when: running extraction on new PDFs; Claude API errors (auth, rate limit, timeout, JSON parse failure); understanding extraction output files; re-extracting a specific PDF; diagnosing missing, wrong, or rejected table data; data/processed/processed.json or master CSVs are out of sync."
 ---
 
 # SitRep Extract

@@ -1,6 +1,6 @@
 ---
 name: sitrep-validation
-description: "Update and validate against the Kraemer lab Ebola DRC 2026 reference dataset. Use when: updating the Kraemer submodule before rendering; the cross-source validation section is missing or stale; git submodule errors; understanding which Kraemer files feed the report; interpreting discrepancies between automated extraction and the Kraemer manually-coded data."
+description: "Update and validate against the INRB-UMIE Ebola DRC 2026 reference dataset. Use when: updating the INRB-UMIE submodule before rendering; the cross-source validation section is missing or stale; git submodule errors; understanding which INRB-UMIE files feed the report; interpreting discrepancies between automated extraction and the INRB-UMIE manually-coded data."
 ---
 
 # INRB-UMIE Validation Data
@@ -53,7 +53,7 @@ Zone name differences are harmonised in the report via `KRAEMER_NAME_MAP`:
 
 ## Interpreting the Cross-Source Comparison
 
-The validation section overlays this extraction's values against Kraemer lab values on the same chart. Expected behaviour:
+The validation section overlays this extraction's values against INRB-UMIE values on the same chart. Expected behaviour:
 
 | Observation | Meaning |
 |-------------|---------|
@@ -81,5 +81,5 @@ git commit -m "Update INRB-UMIE submodule to YYYY-MM-DD build"
 | `fatal: no submodule mapping found in .gitmodules` | Submodule not initialised | Run `git submodule init && git submodule update` |
 | `fatal: repository 'https://github.com/kraemer-lab/Ebola_DRC_2026' not found` | Network or GitHub auth issue | Check internet; re-authenticate with `gh auth login` if using HTTPS |
 | `Error in read_csv(...) : cannot open the connection` | CSV file missing from submodule | Submodule may be partially initialised; run `git submodule update --init --recursive` |
-| Cross-source section renders blank | Kraemer files exist but all rows filtered out | Check that `zone` values in Kraemer data match `ZONE_LEVELS` defined in `sitrep_report.qmd` |
+| Cross-source section renders blank | INRB-UMIE files exist but all rows filtered out | Check that `zone` values in INRB-UMIE data match `ZONE_LEVELS` defined in `sitrep_report.qmd` |
 | Submodule is already up to date | INRB-UMIE has not pushed a new build | Check https://github.com/kraemer-lab/Ebola_DRC_2026/commits for the latest build date |

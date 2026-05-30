@@ -79,7 +79,7 @@ When a stage fails:
 
 **DO NOT:**
 - Modify or delete raw PDF files in `data/raw/`
-- Delete rows from `outputs/master_*.csv`
+- Delete rows from `data/processed/master_*.csv`
 - Force-push (`git push --force`) or amend published commits
 - Modify `.env` directly (ask the user to update API keys)
 
