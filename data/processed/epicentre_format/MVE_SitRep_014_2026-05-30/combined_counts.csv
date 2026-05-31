@@ -1,0 +1,3 @@
+﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
+,28/05/2026,Nouveaux,,,84,,,,,,,MVE_SitRep_014_2026-05-30,TRUE
+,28/05/2026,Cumules,349,,210,,,17,,,,MVE_SitRep_014_2026-05-30,TRUE

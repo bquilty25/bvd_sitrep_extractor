@@ -25,6 +25,7 @@ import json_repair
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -597,22 +598,34 @@ def _stream_with_retry(
         }
     ]
     last_exc: Exception | None = None
-    for attempt in range(1, 3):
+    max_attempts = 5
+    for attempt in range(1, max_attempts + 1):
         if attempt > 1:
-            print(f"  Retrying {label} (attempt {attempt}) …")
+            wait = 2 ** (attempt - 2)  # 1s, 2s, 4s, 8s
+            print(f"  Retrying {label} (attempt {attempt}/{max_attempts}, wait {wait}s) …")
+            time.sleep(wait)
         try:
-            with client.messages.stream(
-                model=MODEL, max_tokens=max_tokens, temperature=0, messages=messages,
-            ) as stream:
-                text = stream.get_final_text()
-                stop_reason = stream.get_final_message().stop_reason
+            # Use non-streaming create for even-numbered attempts as a fallback
+            # (streaming connections can be dropped for large PDFs)
+            if attempt % 2 == 0:
+                response = client.messages.create(
+                    model=MODEL, max_tokens=max_tokens, temperature=0, messages=messages,
+                )
+                text = response.content[0].text
+                stop_reason = response.stop_reason
+            else:
+                with client.messages.stream(
+                    model=MODEL, max_tokens=max_tokens, temperature=0, messages=messages,
+                ) as stream:
+                    text = stream.get_final_text()
+                    stop_reason = stream.get_final_message().stop_reason
             if stop_reason == "max_tokens":
                 print(f"  WARNING: {label} response truncated (max_tokens).")
             return text
         except Exception as exc:
             last_exc = exc
             print(f"  WARNING: {type(exc).__name__} on {label} attempt {attempt}: {exc}")
-    raise ValueError(f"{label} failed after 2 attempts: {last_exc}") from last_exc
+    raise ValueError(f"{label} failed after {max_attempts} attempts: {last_exc}") from last_exc
 
 
 def extract_tables(
