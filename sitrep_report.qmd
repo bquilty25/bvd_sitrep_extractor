@@ -587,7 +587,7 @@ Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE da
 
 Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
 
-At the right edge of the case-count comparison panels, the automated extraction now extends to 27 May (SitRep 013) while the latest zone-level values in the INRB-UMIE dataset are from 26 May. Any apparent divergence on the final date therefore reflects a one-day coverage gap rather than a methodological disagreement.
+From 28 May onwards, SitRep 014 did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The red-shaded region in the comparison panels marks this gap: INRB-UMIE zone values from 28 May onwards derive from the live INRB tracker application rather than from the PDF situation reports.
 
 ```{r}
 #| label: fig-comparison
@@ -697,6 +697,15 @@ p_nat <- ggplot(comp_long_nat,
 
 p_zones <- ggplot(comp_long_zones,
                   aes(x = date, y = count, colour = source, linetype = source)) +
+  annotate("rect",
+           xmin = as.Date("2026-05-28"), xmax = Inf,
+           ymin = -Inf, ymax = Inf,
+           fill = "red", alpha = 0.08) +
+  annotate("text",
+           x = as.Date("2026-05-28"), y = Inf,
+           label = "Zone data\nnot in PDF;\nINRB-UMIE\ntracker only",
+           hjust = -0.05, vjust = 1.1,
+           size = 1.8, colour = "red3") +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
