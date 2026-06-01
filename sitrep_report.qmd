@@ -407,10 +407,11 @@ ous_national <- df_raw |>
     (zone == "Total" | province == "Total" | (is.na(zone) & is.na(province)))
   ) |>
   mutate(
-    date      = dmy(count_end_date),
-    suspected = as.numeric(cases_suspect),
-    confirmed = as.numeric(cases_confirmed),
-    deaths    = coalesce(
+    date           = dmy(count_end_date),
+    suspected      = as.numeric(cases_suspect),
+    confirmed      = as.numeric(cases_confirmed),
+    deaths_susp_raw = as.numeric(deaths_suspected),
+    deaths         = coalesce(
       as.numeric(deaths_suspected),
       as.numeric(deaths_probable),
       as.numeric(deaths_confirmed)
@@ -425,7 +426,8 @@ ous_national <- df_raw |>
   slice_max(order_by = row_priority, n = 1, with_ties = FALSE) |>
   ungroup() |>
   transmute(date, sitrep_source, ours_suspected = suspected,
-            ours_confirmed = confirmed, ours_deaths = deaths)
+            ours_confirmed = confirmed, ours_deaths = deaths,
+            ours_deaths_susp = deaths_susp_raw)
 
 # Join all three sources
 nat_comparison <- ous_national |>
@@ -587,7 +589,7 @@ Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE da
 
 Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
 
-From 28 May onwards, SitRep 014 did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The red-shaded region in the comparison panels marks this gap: INRB-UMIE zone values from 28 May onwards derive from the live INRB tracker application rather than from the PDF situation reports.
+From 28 May onwards, SitRep 014 did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The red-shaded region in the comparison panels marks this gap: INRB-UMIE zone values from 28 May onwards derive from the live INRB tracker application rather than from the PDF situation reports. SitRep 014 also explicitly excluded suspected deaths pending the outcome of ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*); the orange-shaded region in the national "Suspected deaths" and "Total deaths" panels marks the consequent break in our series. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF. Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is faithfully reproduced from the PDF and likely reflects an interim partial recount between the two reports.
 
 ```{r}
 #| label: fig-comparison
@@ -624,8 +626,8 @@ our_nat_for_comp <- ous_national |>
             date,
             confirmed   = ours_confirmed,
             suspected   = ours_suspected,
-            deaths_susp = ours_deaths,
-            deaths      = ours_deaths,
+            deaths_susp = ours_deaths_susp,
+            deaths      = ours_deaths_susp,
             source      = "Automated extraction")
 
 # INRB-UMIE deaths_susp = suspected only; deaths = suspected + confirmed (total)
@@ -685,6 +687,23 @@ base_theme <- list(
 
 p_nat <- ggplot(comp_long_nat,
                 aes(x = date, y = count, colour = source, linetype = source)) +
+  geom_rect(
+    data = tibble(metric = factor("Suspected deaths",
+                                  levels = levels(comp_long_nat$metric)),
+                  xmin = as.Date("2026-05-28"), xmax = Inf,
+                  ymin = -Inf, ymax = Inf),
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    fill = "orange", alpha = 0.12, inherit.aes = FALSE
+  ) +
+  geom_text(
+    data = tibble(metric = factor("Suspected deaths",
+                                  levels = levels(comp_long_nat$metric)),
+                  x = as.Date("2026-05-28"), y = Inf,
+                  label = "Excl. SitRep 014\n(pending investigation)"),
+    aes(x = x, y = y, label = label),
+    hjust = -0.04, vjust = 1.1, size = 1.8, colour = "darkorange3",
+    inherit.aes = FALSE
+  ) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
