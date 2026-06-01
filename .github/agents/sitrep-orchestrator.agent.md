@@ -20,6 +20,26 @@ set -a && source .env && set +a
 
 If `.env` is missing or `ANTHROPIC_API_KEY` is not set, stop and ask the user to provide the key before proceeding.
 
+## "Check for Updates" Procedure
+
+When asked to "check" or "check for updates", always run **both** of these:
+
+```bash
+# 1. New INSP PDFs?
+python3 scripts/fetch_sitreps.py
+
+# 2. New INRB-UMIE data?
+git -C Ebola_DRC_2026 fetch origin && git -C Ebola_DRC_2026 log HEAD..origin/main --oneline
+```
+
+Report the result of both:
+- Fetch: how many new PDFs (if any) were downloaded
+- INRB-UMIE: whether the remote has new commits ahead of the current submodule HEAD
+
+If either has new data, offer to run the full pipeline. If neither has changed, report "up to date" for both.
+
+---
+
 ## Pipeline Stages
 
 Run these four stages in order. Each has a dedicated skill — load it for deep procedural guidance and error tables.
