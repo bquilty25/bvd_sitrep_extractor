@@ -723,7 +723,7 @@ p_zones <- ggplot(comp_long_zones,
   annotate("text",
            x = as.Date("2026-05-28"), y = Inf,
            label = "Zone data\nnot in PDF;\nINRB-UMIE\ntracker only",
-           hjust = -0.05, vjust = 1.1,
+           hjust = 1.05, vjust = 1.1,
            size = 1.8, colour = "red3") +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
