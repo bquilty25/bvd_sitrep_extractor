@@ -721,20 +721,35 @@ p_nat <- ggplot(comp_long_nat,
        title = "National") +
   base_theme
 
+zones_label_pt <- comp_long_zones |>
+  filter(date == as.Date("2026-05-28"),
+         metric == "Confirmed cases",
+         zone   == "Mongbwalu",
+         source == "INRB-UMIE") |>
+  slice(1)
+
 p_zones <- ggplot(comp_long_zones,
                   aes(x = date, y = count, colour = source, linetype = source)) +
-  geom_vline(xintercept = as.Date("2026-05-28"),
-             linetype = "dotted", colour = "red3", linewidth = 0.35, alpha = 0.7) +
-  annotate("text",
-           x = as.Date("2026-05-28"), y = Inf,
-           label = "SitRep 014:\nno zone breakdown",
-           hjust = -0.05, vjust = 1.1,
-           size = 1.7, colour = "red3") +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
   geom_point(data = ~filter(.x, source == "INRB-UMIE"),
              size = POINT_SIZE_KRAEMER, na.rm = TRUE, show.legend = FALSE) +
+  ggrepel::geom_text_repel(
+    data            = zones_label_pt,
+    aes(x = date, y = count, label = "SitRep 014:\nno PDF zone data"),
+    colour          = "red3",
+    size            = 1.9,
+    fontface        = "plain",
+    inherit.aes     = FALSE,
+    nudge_x         = -2,
+    nudge_y         = 8,
+    segment.colour  = "red3",
+    segment.size    = 0.3,
+    min.segment.len = 0,
+    box.padding     = 0.2,
+    show.legend     = FALSE
+  ) +
   facet_nested(metric ~ province + zone, scales = "free_y") +
   labs(x = NULL, y = NULL, colour = NULL, linetype = NULL,
        title = "By health zone") +
