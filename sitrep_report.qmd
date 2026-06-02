@@ -594,7 +594,9 @@ Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE da
 
 Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
 
-From 28 May onwards, SitRep 014 did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The red-shaded region in the comparison panels marks this gap: INRB-UMIE zone values from 28 May onwards derive from the live INRB tracker application rather than from the PDF situation reports. SitRep 014 also explicitly excluded suspected deaths pending the outcome of ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*); the orange-shaded region in the national "Suspected deaths" and "Total deaths" panels marks the consequent break in our series. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF. Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is faithfully reproduced from the PDF and likely reflects an interim partial recount between the two reports.
+SitRep 014 (28 May) did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The dotted vertical line in the zone-level panels marks this single-day gap. Zone-level confirmed case counts returned in SitRep 015 (29 May); however, SitRep 016 (30 May) again provides only province-level aggregates (Ituri, Nord-Kivu, Sud-Kivu) without a health zone breakdown.
+
+From SitRep 014 onwards, cumulative suspect/probable counts are absent from the national total rows in the source PDFs — SitReps 014, 015, and 016 all report confirmed cases only in their cumulative national summaries. The orange-shaded region in the national "Suspected deaths" panel marks this ongoing break in our series. SitRep 014 also explicitly excluded suspected deaths pending the outcome of ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*); the INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF. Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is faithfully reproduced from the PDF and likely reflects an interim partial recount between the two reports.
 
 ```{r}
 #| label: fig-comparison
@@ -704,7 +706,7 @@ p_nat <- ggplot(comp_long_nat,
     data = tibble(metric = factor("Suspected deaths",
                                   levels = levels(comp_long_nat$metric)),
                   x = as.Date("2026-05-28"), y = Inf,
-                  label = "Excl. SitRep 014\n(pending investigation)"),
+                  label = "Suspected deaths\nabsent SitRep 014+"),
     aes(x = x, y = y, label = label),
     hjust = -0.04, vjust = 1.1, size = 1.8, colour = "darkorange3",
     inherit.aes = FALSE
@@ -721,15 +723,13 @@ p_nat <- ggplot(comp_long_nat,
 
 p_zones <- ggplot(comp_long_zones,
                   aes(x = date, y = count, colour = source, linetype = source)) +
-  annotate("rect",
-           xmin = as.Date("2026-05-28"), xmax = Inf,
-           ymin = -Inf, ymax = Inf,
-           fill = "red", alpha = 0.08) +
+  geom_vline(xintercept = as.Date("2026-05-28"),
+             linetype = "dotted", colour = "red3", linewidth = 0.35, alpha = 0.7) +
   annotate("text",
            x = as.Date("2026-05-28"), y = Inf,
-           label = "Zone data\nnot in PDF;\nINRB-UMIE\ntracker only",
-           hjust = 1.05, vjust = 1.1,
-           size = 1.8, colour = "red3") +
+           label = "SitRep 014:\nno zone breakdown",
+           hjust = -0.05, vjust = 1.1,
+           size = 1.7, colour = "red3") +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
   geom_point(data = ~filter(.x, source == "Automated extraction"),
              size = POINT_SIZE_OURS,    na.rm = TRUE, show.legend = FALSE) +
@@ -836,7 +836,7 @@ poe_ours <- read_csv(
 
 Two points are worth flagging when comparing the response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three sub-columns without explaining what each represents. Both datasets handle this differently, so the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005 and 006 used an earlier table layout that made the in-bed count and new admissions columns harder to distinguish; the two datasets differ slightly on those dates as a result. From 22 May onwards, when the table format was standardised, the datasets are in close agreement.
 
-The INRB-UMIE processed sitrep files currently extend through 26 May for hospital indicators and through 26 May for PoE indicators (both updated to build `2026-05-28`), while our automated extraction now covers through 27 May (SitRep 013). The validation panels therefore overlap fully through 26 May; any gap at the right edge of those panels reflects a one-day coverage difference rather than a methodological discrepancy.
+The INRB-UMIE processed sitrep files now extend through 30 May for hospital and PoE indicators (updated to build `2026-06-02`), and our automated extraction also covers through 30 May (SitRep 016). The validation panels therefore overlap fully through 30 May.
 
 ```{r}
 #| label: fig-comparison-response
