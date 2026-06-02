@@ -1,0 +1,32 @@
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Aru,,,2.0,,,1.0,107.0
+Ituri,Bambu,,,2.0,,,2.0,323.0
+Ituri,Bunia,,,80.0,,,8.0,476.0
+Ituri,Kilo,,,2.0,,,,41.0
+Ituri,Mongbwalu,,,47.0,,,10.0,235.0
+Ituri,Nizi,,,2.0,,,,288.0
+Ituri,Nyankunde,,,19.0,,,1.0,435.0
+Ituri,Rwampara,,,65.0,,,13.0,766.0
+Ituri,ZS non identifiée,,,6.0,,,,
+Ituri,Mangala,,,1.0,,,,
+Ituri,Damas,,,1.0,,,,
+Ituri,Aungba,,,1.0,,,,
+Ituri,Gety,,,1.0,,,,
+Ituri,Komanda,,,1.0,,,,
+Ituri,Jiba,,,,,,,
+Ituri,Lita,,,1.0,,,,
+Ituri,Sans fiche,,,14.0,,,,
+Ituri,,,,245.0,,,35.0,2671.0
+Nord-Kivu,Butembo,,,5.0,,,2.0,24.0
+Nord-Kivu,Goma,,,1.0,,,,66.0
+Nord-Kivu,Katwa,,,4.0,,,3.0,112.0
+Nord-Kivu,Karisimbi,,,0.0,,,,249.0
+Nord-Kivu,Kyondo,,,1.0,,,0.0,16.0
+Nord-Kivu,Oicha,,,1.0,,,,32.0
+Nord-Kivu,Kalunguta,,,1.0,,,1.0,20.0
+Nord-Kivu,Manguripa,,,0.0,,,0.0,10.0
+Nord-Kivu,Beni,,,2.0,,,,
+Nord-Kivu,,,,15.0,,,6.0,529.0
+Sud-Kivu,Miti Murhesa,,,3.0,,,1.0,
+Sud-Kivu,,,,3.0,,,1.0,0.0
+,Total,,,263.0,,,42.0,3200.0

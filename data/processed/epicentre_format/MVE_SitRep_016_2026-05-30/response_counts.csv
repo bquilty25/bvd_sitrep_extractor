@@ -1,0 +1,9 @@
+﻿date,zone,province,sitrep_source,in_bed_previous_day,new_admissions_ppl,new_admissions_other,total_admissions,total_isolated,cumulative_admitted
+30/05/2026,Bunia,,MVE_SitRep_016_2026-05-30,17,0,5,,23,
+30/05/2026,Rwampara,,MVE_SitRep_016_2026-05-30,14,0,3,,19,
+30/05/2026,CME,,MVE_SitRep_016_2026-05-30,10,0,7,,19,
+30/05/2026,Mongbwalu,,MVE_SitRep_016_2026-05-30,11,0,6,,22,
+30/05/2026,Nyankunde,,MVE_SitRep_016_2026-05-30,41,0,1,,44,
+30/05/2026,Bambu,,MVE_SitRep_016_2026-05-30,5,1,4,,10,
+30/05/2026,Aru,,MVE_SitRep_016_2026-05-30,5,0,0,,5,
+30/05/2026,Total,,MVE_SitRep_016_2026-05-30,103,1,26,,142,

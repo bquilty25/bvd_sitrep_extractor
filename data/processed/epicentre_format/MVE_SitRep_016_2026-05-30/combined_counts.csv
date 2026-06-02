@@ -1,0 +1,6 @@
+﻿count_start_date,count_end_date,count_type,cases_suspect,cases_probable,cases_confirmed,deaths_suspected,deaths_probable,deaths_confirmed,contacts,zone,province,sitrep_source,is_aggregate
+,30/05/2026,Nouveaux,,,19,,,,,,,MVE_SitRep_016_2026-05-30,TRUE
+,30/05/2026,Cumules,,,264,,,,,,Ituri,MVE_SitRep_016_2026-05-30,TRUE
+,30/05/2026,Cumules,,,15,,,,,,Nord-Kivu,MVE_SitRep_016_2026-05-30,TRUE
+,30/05/2026,Cumules,,,3,,,,,,Sud-Kivu,MVE_SitRep_016_2026-05-30,TRUE
+,30/05/2026,Cumules,,,282,,,42,,Total,,MVE_SitRep_016_2026-05-30,TRUE

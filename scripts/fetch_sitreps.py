@@ -37,7 +37,7 @@ DEFAULT_PAGES = [
 ]
 
 # A PDF URL must contain at least one of these tokens to be considered relevant
-RELEVANCE_TOKENS = ["mve", "sitrep", "ebola", "marburg"]
+RELEVANCE_TOKENS = ["mve", "mvb", "sitrep", "ebola", "marburg"]
 
 # Only download PDFs uploaded in this month or later (YYYY/MM as it appears in the URL)
 DEFAULT_SINCE = "2026/05"
@@ -83,12 +83,12 @@ def _parse_last_modified(header_value: str) -> str:
 
 # Regex to follow SitRep blog-post links found on category/listing pages
 _POST_SLUG_RE = re.compile(
-    r'href=["\']((https?://insp\.cd/)?sitrep-mve[^"\']+)["\']',
+    r'href=["\']((https?://insp\.cd/)?sitrep-mv[eb][^"\']+)["\']',
     re.IGNORECASE,
 )
 
 # Regex to extract sitrep number from a source-page slug, e.g. sitrep-mve-n-010-2026 → 010
-_SITREP_NUM_RE = re.compile(r'sitrep-mve-n-0*(\d+)-\d{4}', re.IGNORECASE)
+_SITREP_NUM_RE = re.compile(r'sitrep-mv[eb]-n-0*(\d+)-\d{4}', re.IGNORECASE)
 
 
 def _sitrep_number_from_page(source_page: str) -> str | None:

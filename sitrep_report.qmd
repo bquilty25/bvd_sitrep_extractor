@@ -204,8 +204,8 @@ make_zone_labels <- function(dat) {
 # ── Inline summary statistics ──────────────────────────────────────────────────
 latest_total <- totals |> slice_max(date, n = 1)
 latest_date  <- format(max(totals$date, na.rm = TRUE), "%d %B %Y")
-n_unconf     <- latest_total$unconfirmed
-n_conf       <- latest_total$confirmed
+n_unconf     <- coalesce(latest_total$unconfirmed, 0)
+n_conf       <- coalesce(latest_total$confirmed, 0)
 n_deaths     <- coalesce(latest_total$deaths, 0L)
 n_total      <- n_unconf + n_conf
 cfr_pct      <- if (n_total > 0) round(n_deaths / n_total * 100, 1) else NA_real_
@@ -441,6 +441,11 @@ nat_comparison <- ous_national |>
 Case counts and figures in this report are extracted from INSP DRC PDF situation reports by an AI vision model (Anthropic Claude `claude-sonnet-4-6`) without systematic manual verification of every value. Extraction errors are possible, particularly where PDF table layouts are complex or inconsistent. All values should be verified against the [original INSP DRC situation reports](https://insp.cd/ebola/) before any operational, clinical, or policy use. This report is intended for research and situational awareness only.
 :::
 
+::: {.callout-note}
+**SitReps 015 and 016 — sourced from INRB-UMIE GitHub.**
+Situation reports 015 (29 May 2026) and 016 (30 May 2026) had not been published on the INSP website at the time of extraction. The PDFs were obtained from the [INRB-UMIE/Ebola_DRC_2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) repository (`data/insp_sitrep/raw/`) and are recorded in `data/raw/manifest.json` with a `source_note` field to this effect. These entries will be superseded once INSP publishes the PDFs directly.
+:::
+
 ## Introduction
 
 This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo, covering cases in Ituri and Nord-Kivu provinces. Data are drawn from official situation reports published by the Institut National de Santé Publique (INSP DRC) and are updated automatically as new reports become available.
@@ -449,7 +454,7 @@ This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic 
 
 ### Data sources
 
-Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by INRB-UMIE (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The INRB-UMIE series, produced by manual data entry, was used as an independent check on our automated extraction.
+Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by INRB-UMIE (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The INRB-UMIE series, produced by manual data entry, was used as an independent check on our automated extraction. SitReps 015 and 016 (29–30 May 2026) were not available on the INSP website at the time of extraction and were instead sourced from the [INRB-UMIE/Ebola_DRC_2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) GitHub repository; they will be replaced with direct INSP downloads once the PDFs are published.
 
 ### Automated PDF extraction
 
