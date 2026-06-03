@@ -106,6 +106,7 @@ Report (`outputs/`):
 - `count_type` values in combined tables are `Nouveaux` and `Cumules`.
 - `ND` values from source PDFs are stored as blanks.
 - Subtotals/totals are preserved when present in source tables.
+- **SitReps 015 and 016** (29–30 May 2026) were not published on the INSP website at the time of extraction. Their PDFs were sourced from the [INRB-UMIE/Ebola_DRC_2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) repository and are recorded in `data/raw/manifest.json` with a `source_note` field. These entries will be replaced with direct INSP downloads once the PDFs are published.
 
 ## Experimental: GitHub Copilot Agent Mode
 
