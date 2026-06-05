@@ -49,6 +49,26 @@ MODEL      = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-4-6")
 MAX_TOKENS_JSON = 8192   # JSON-only table extraction — well within model limits
 MAX_TOKENS_TEXT = 48000  # Full document transcription
 
+
+def _load_env_file(env_path: Path | None = None) -> None:
+    """Populate os.environ from a .env file if the variables are not already set."""
+    path = env_path or (_PROJECT_ROOT / ".env")
+    if not path.exists():
+        return
+
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+
+        key, value = line.split("=", 1)
+        key = key.strip()
+        value = value.strip()
+        if value and value[0] == value[-1] and value[0] in {'"', "'"}:
+            value = value[1:-1]
+
+        os.environ.setdefault(key, value)
+
 # ── Combined linelist schema ─────────────────────────────────────────────────
 
 COMBINED_COLS = [
@@ -1127,6 +1147,8 @@ def main() -> None:
         ),
     )
     args = parser.parse_args()
+
+    _load_env_file()
 
     output_dir = Path(args.output_dir).expanduser().resolve()
 

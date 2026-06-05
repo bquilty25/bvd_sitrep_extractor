@@ -11,6 +11,7 @@ Run after extract_sitrep.py has been executed at least once:
 """
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
@@ -26,6 +27,7 @@ from extract_sitrep import (
     parse_french_date, extract_date_from_filename, build_combined_counts, _nd,
     COMBINED_COLS, normalise_zone, _row_has_data,
     _sitrep_series_key, _sitrep_revision, _dedupe_latest_revision, _is_aggregate,
+    _load_env_file,
 )
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -237,6 +239,20 @@ class TestSitrepRevisionHandling:
 class TestAggregateDetection:
     def test_blank_zone_and_province_is_aggregate(self):
         assert _is_aggregate("", "") == "TRUE"
+
+
+class TestEnvLoading:
+    def test_load_env_file_populates_missing_variables(self, tmp_path, monkeypatch):
+        env_file = tmp_path / ".env"
+        env_file.write_text('CLAUDE_API_KEY="test-key"\nANTHROPIC_MODEL="claude-sonnet-4-6"\n')
+
+        monkeypatch.delenv("CLAUDE_API_KEY", raising=False)
+        monkeypatch.delenv("ANTHROPIC_MODEL", raising=False)
+
+        _load_env_file(env_file)
+
+        assert os.environ["CLAUDE_API_KEY"] == "test-key"
+        assert os.environ["ANTHROPIC_MODEL"] == "claude-sonnet-4-6"
 
 
 class TestNdHelper:

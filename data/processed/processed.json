@@ -63,5 +63,13 @@
   "MVE_SitRep_014_2026-05-30.pdf": {
     "processed_at": "2026-05-31T09:33:27.628726+00:00",
     "rows_added": 2
+  },
+  "MVE_SitRep_015_2026-05-29.pdf": {
+    "processed_at": "2026-06-03T13:21:38.567118+00:00",
+    "rows_added": 51
+  },
+  "MVE_SitRep_016_2026-05-30.pdf": {
+    "processed_at": "2026-06-03T13:24:25.383780+00:00",
+    "rows_added": 5
   }
 }

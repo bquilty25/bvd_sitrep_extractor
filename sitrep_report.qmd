@@ -89,10 +89,12 @@ df <- df |>
   mutate(province = if_else(!is_agg & is.na(province), province_lut, province)) |>
   select(-province_lut)
 
-ZONE_LEVELS <- c(
-  "Mongbwalu", "Rwampara", "Bunia", "Nyankunde", "Bambu",
-  "Butembo", "Katwa", "Goma"
-)
+# Use every non-aggregate health zone actually present in the latest processed
+# data, rather than a fixed eight-zone subset that drops newer SitReps.
+ZONE_LEVELS <- df |>
+  filter(!is_agg, !is.na(zone), zone != "Total") |>
+  distinct(zone) |>
+  pull(zone)
 
 # Colorblind-safe palette — Wong (2011)
 PAL <- c(
