@@ -89,11 +89,18 @@ df <- df |>
   mutate(province = if_else(!is_agg & is.na(province), province_lut, province)) |>
   select(-province_lut)
 
-# Use every non-aggregate health zone actually present in the latest processed
-# data, rather than a fixed eight-zone subset that drops newer SitReps.
+# Restrict the main comparison plot to the 8 highest-volume health zones
+# in the latest processed data, so the zone panels stay readable.
+TOP_N_ZONES <- 8
+
 ZONE_LEVELS <- df |>
-  filter(!is_agg, !is.na(zone), zone != "Total") |>
-  distinct(zone) |>
+  filter(count_type == "Cumules", !is_agg, !is.na(zone), zone != "Total") |>
+  group_by(zone) |>
+  slice_max(order_by = date, n = 1, with_ties = FALSE) |>
+  ungroup() |>
+  mutate(total_cases = coalesce(unconfirmed, 0) + coalesce(confirmed, 0)) |>
+  arrange(desc(total_cases), zone) |>
+  slice_head(n = TOP_N_ZONES) |>
   pull(zone)
 
 # Colorblind-safe palette — Wong (2011)
