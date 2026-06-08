@@ -40,13 +40,28 @@ df_raw <- read_csv(
 
 df <- df_raw |>
   mutate(
+    # Normalise zone spellings that vary across SitRep versions
+    zone = case_match(
+      zone,
+      "ARU"         ~ "Aru",
+      "Karissibi"   ~ "Karisimbi",
+      "Miti Murhesa" ~ "Miti-Murhesa",
+      .default = zone
+    )
+  ) |>
+  mutate(
     date        = dmy(count_end_date),
     suspect     = as.numeric(cases_suspect),
     probable    = as.numeric(cases_probable),
     confirmed   = as.numeric(cases_confirmed),
     deaths      = coalesce(as.numeric(deaths_suspected), as.numeric(deaths_probable), as.numeric(deaths_confirmed)),
     deaths_susp = as.numeric(deaths_suspected),
-    is_agg      = (toupper(is_aggregate) == "TRUE"),
+    # Some rows are aggregate/unknown but were not flagged as such at extraction.
+    # Mark them here so they are excluded from zone-level plots.
+    is_agg      = (toupper(is_aggregate) == "TRUE") |
+                  grepl("^Autres ZS", zone, ignore.case = TRUE) |
+                  zone %in% c("Sans fiche", "Echantillons sans fiche",
+                              "ZS non identifiée", "TOTAL"),
     # Only sum to zero when at least one component is present; otherwise NA
     # (avoids a false zero for zones that simply weren't reported in that sitrep)
     unconfirmed = if_else(
@@ -62,25 +77,30 @@ df <- df_raw |>
 ZONE_PROVINCE_LUT <- tribble(
   ~zone,                     ~province_lut,
   "Aru",                     "Ituri",
+  "Aungba",                  "Ituri",
   "Bambu",                   "Ituri",
   "Bunia",                   "Ituri",
-  "Echantillons sans fiche", "Ituri",
+  "Damas",                   "Ituri",
+  "Gety",                    "Ituri",
   "Kilo",                    "Ituri",
   "Kilo Mission",            "Ituri",
+  "Logo",                    "Ituri",
   "Mambasa",                 "Ituri",
+  "Mangala",                 "Ituri",
+  "Manguripa",               "Ituri",
   "Mongbwalu",               "Ituri",
   "Nizi",                    "Ituri",
   "Nyankunde",               "Ituri",
+  "Rimba",                   "Ituri",
   "Rwampara",                "Ituri",
   "Butembo",                 "Nord-Kivu",
   "Goma",                    "Nord-Kivu",
   "Kalunguta",               "Nord-Kivu",
   "Karisimbi",               "Nord-Kivu",
-  "Karissibi",               "Nord-Kivu",
   "Katwa",                   "Nord-Kivu",
   "Kyondo",                  "Nord-Kivu",
+  "Lita",                    "Nord-Kivu",
   "Oicha",                   "Nord-Kivu",
-  "Miti Murhesa",            "Sud-Kivu",
   "Miti-Murhesa",            "Sud-Kivu",
 )
 
