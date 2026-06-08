@@ -556,73 +556,6 @@ nat_comparison |>
   autofit()
 ```
 
-#### Internal consistency — zone sum vs national aggregate
-
-Cumulative zone-row sums are compared with the national banner figure for each date. Highlighted rows (non-zero Δ) arise from three causes:
-
-- Early reports (SitReps 001–003) provide only a province-level Ituri total, not individual zone rows.
-- Some reports omit certain zones from the breakdown table.
-- The banner vs sub-table discrepancy present from SitRep 010 onwards (described above).
-
-```{r}
-#| label: tbl-zone-sum-check
-#| tbl-cap: "Zone sum vs national aggregate. Values show the cumulative total across all extracted health zones versus the national figure from the front-page banner. Δ = zone sum minus national banner. Highlighted rows have a non-zero difference in at least one metric."
-zone_sum_vs_nat <- zone_ts |>
-  group_by(date) |>
-  summarise(
-    sum_susp = if (any(!is.na(unconfirmed_raw))) sum(unconfirmed_raw, na.rm = TRUE) else NA_real_,
-    sum_conf = if (any(!is.na(confirmed_raw)))   sum(confirmed_raw,   na.rm = TRUE) else NA_real_,
-    sum_dths = if (any(!is.na(deaths_raw)))       sum(deaths_raw,      na.rm = TRUE) else NA_real_,
-    .groups  = "drop"
-  ) |>
-  left_join(
-    ous_national |> select(date,
-                            nat_susp = ours_suspected,
-                            nat_conf = ours_confirmed,
-                            nat_dths = ours_deaths),
-    by = "date"
-  ) |>
-  mutate(
-    d_susp = sum_susp - nat_susp,
-    d_conf = sum_conf - nat_conf,
-    d_dths = sum_dths - nat_dths
-  ) |>
-  arrange(date)
-
-discrepant_rows <- which(
-  (!is.na(zone_sum_vs_nat$d_susp) & zone_sum_vs_nat$d_susp != 0) |
-  (!is.na(zone_sum_vs_nat$d_conf) & zone_sum_vs_nat$d_conf != 0) |
-  (!is.na(zone_sum_vs_nat$d_dths) & zone_sum_vs_nat$d_dths != 0)
-)
-
-zone_sum_vs_nat |>
-  transmute(
-    Date             = format(date, "%d %b"),
-    `Zones (susp.)`  = sum_susp,
-    `Nat. (susp.)`   = nat_susp,
-    `Δ susp.`        = d_susp,
-    `Zones (conf.)`  = sum_conf,
-    `Nat. (conf.)`   = nat_conf,
-    `Δ conf.`        = d_conf,
-    `Zones (deaths)` = sum_dths,
-    `Nat. (deaths)`  = nat_dths,
-    `Δ deaths`       = d_dths
-  ) |>
-  flextable() |>
-  add_header_row(
-    values    = c("", "Suspected", "Confirmed", "Deaths"),
-    colwidths = c(1, 3, 3, 3)
-  ) |>
-  merge_h(part = "header") |>
-  align(align = "center", part = "header") |>
-  align(j = -1, align = "right", part = "body") |>
-  bg(i = discrepant_rows, bg = "#FFF3CD") |>
-  colformat_int(j = 2:10, na_str = "—") |>
-  bold(part = "header") |>
-  hline(part = "body") |>
-  autofit()
-```
-
 ### Data quality notes — case counts
 
 - **Mongbwalu zone-level data starts late.** SitRep 001 records 246 suspected cases for all of Ituri province combined; no Mongbwalu-specific count appears until SitRep 004 (18 May, 302 suspected). The Mongbwalu line therefore starts later than in INRB-UMIE — this is a reporting gap, not a case-onset gap.
@@ -1074,3 +1007,72 @@ p
 - Zone-level breakdowns are absent or incomplete in SitReps 001–013 and in SitReps 014 and 016; the zone-level series is therefore not fully continuous.
 - Response indicator table layouts varied across early reports, introducing minor inconsistencies in trend data.
 - Automated extraction and INRB-UMIE manual coding provide complementary checks: agreement increases confidence in a figure; disagreement typically reflects genuine ambiguity in the source document.
+
+## Appendix — Internal consistency check
+
+#### Zone sum vs national aggregate
+
+Cumulative zone-row sums are compared with the national banner figure for each date. Highlighted rows (non-zero Δ) arise from three causes:
+
+- Early reports (SitReps 001–003) provide only a province-level Ituri total, not individual zone rows.
+- Some reports omit certain zones from the breakdown table.
+- The banner vs sub-table discrepancy present from SitRep 010 onwards (described above).
+
+```{r}
+#| label: tbl-zone-sum-check
+#| tbl-cap: "Zone sum vs national aggregate. Values show the cumulative total across all extracted health zones versus the national figure from the front-page banner. Δ = zone sum minus national banner. Highlighted rows have a non-zero difference in at least one metric."
+zone_sum_vs_nat <- zone_ts |>
+  group_by(date) |>
+  summarise(
+    sum_susp = if (any(!is.na(unconfirmed_raw))) sum(unconfirmed_raw, na.rm = TRUE) else NA_real_,
+    sum_conf = if (any(!is.na(confirmed_raw)))   sum(confirmed_raw,   na.rm = TRUE) else NA_real_,
+    sum_dths = if (any(!is.na(deaths_raw)))       sum(deaths_raw,      na.rm = TRUE) else NA_real_,
+    .groups  = "drop"
+  ) |>
+  left_join(
+    ous_national |> select(date,
+                            nat_susp = ours_suspected,
+                            nat_conf = ours_confirmed,
+                            nat_dths = ours_deaths),
+    by = "date"
+  ) |>
+  mutate(
+    d_susp = sum_susp - nat_susp,
+    d_conf = sum_conf - nat_conf,
+    d_dths = sum_dths - nat_dths
+  ) |>
+  arrange(date)
+
+discrepant_rows <- which(
+  (!is.na(zone_sum_vs_nat$d_susp) & zone_sum_vs_nat$d_susp != 0) |
+  (!is.na(zone_sum_vs_nat$d_conf) & zone_sum_vs_nat$d_conf != 0) |
+  (!is.na(zone_sum_vs_nat$d_dths) & zone_sum_vs_nat$d_dths != 0)
+)
+
+zone_sum_vs_nat |>
+  transmute(
+    Date             = format(date, "%d %b"),
+    `Zones (susp.)`  = sum_susp,
+    `Nat. (susp.)`   = nat_susp,
+    `Δ susp.`        = d_susp,
+    `Zones (conf.)`  = sum_conf,
+    `Nat. (conf.)`   = nat_conf,
+    `Δ conf.`        = d_conf,
+    `Zones (deaths)` = sum_dths,
+    `Nat. (deaths)`  = nat_dths,
+    `Δ deaths`       = d_dths
+  ) |>
+  flextable() |>
+  add_header_row(
+    values    = c("", "Suspected", "Confirmed", "Deaths"),
+    colwidths = c(1, 3, 3, 3)
+  ) |>
+  merge_h(part = "header") |>
+  align(align = "center", part = "header") |>
+  align(j = -1, align = "right", part = "body") |>
+  bg(i = discrepant_rows, bg = "#FFF3CD") |>
+  colformat_int(j = 2:10, na_str = "—") |>
+  bold(part = "header") |>
+  hline(part = "body") |>
+  autofit()
+```
