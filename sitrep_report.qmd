@@ -477,21 +477,21 @@ Situation reports 015 (29 May 2026) and 016 (30 May 2026) had not been published
 
 ## Introduction
 
-This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo, covering cases in Ituri and Nord-Kivu provinces. Data are drawn from official situation reports published by the Institut National de Santé Publique (INSP DRC) and are updated automatically as new reports become available.
+This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo. Data are sourced from official situation reports published by the Institut National de Santé Publique (INSP DRC), downloaded and processed automatically as new reports are published.
 
 ## Methods
 
 ### Data sources
 
-Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. We verified that our copies of each PDF are identical to those used by INRB-UMIE (by comparing file checksums), so any differences between the two datasets come from how the tables were read, not which documents were used. The INRB-UMIE series, produced by manual data entry, was used as an independent check on our automated extraction. SitReps 015 and 016 (29–30 May 2026) were not available on the INSP website at the time of extraction and were instead sourced from the [INRB-UMIE/Ebola_DRC_2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) GitHub repository; they will be replaced with direct INSP downloads once the PDFs are published.
+Case counts were taken from the INSP DRC situation report PDFs, downloaded automatically from <https://insp.cd/ebola/>. Where our PDF copies and the INRB-UMIE copies overlap, file checksums confirm they are identical, so any differences between the two datasets come from how the tables were read rather than which documents were used. The INRB-UMIE series, produced by manual data entry, was used as an independent check on our automated extraction.
 
 ### Automated PDF extraction
 
-Each PDF was read by Claude (Anthropic, `claude-sonnet-4-6`), which looks at the page visually — the same way a person would — rather than relying on the underlying text. This allows it to handle the complex table layouts in the situation reports accurately. From each PDF we extract four things: daily new case counts, cumulative case and death totals, patient movement through isolation units (available from SitRep 006 onwards), and Point of Entry screening activity. A full text transcript of each report is also saved for audit purposes.
+Each PDF is read by Claude (Anthropic, `claude-sonnet-4-6`) using visual understanding of the page layout, allowing it to handle the complex table structures accurately. Four datasets are extracted from each report: daily new case counts, cumulative case and death totals, patient movement through isolation units (available from SitRep 006 onwards), and Point of Entry screening activity. A full text transcript is also saved for audit purposes.
 
 ### Data harmonisation
 
-Health zone names were standardised to a consistent spelling across all reports. Suspected and probable case counts were added together into a single "unconfirmed" category, since different reports label these columns differently. Cumulative totals were not allowed to decrease over time (a count cannot go backwards), and where more than one row existed for the same zone and date, the higher value was kept.
+Health zone names were standardised to a consistent spelling across all reports. Suspected and probable case counts were summed into a single "unconfirmed" category, since the column labels vary across reports. Cumulative totals were not permitted to decrease over time, and where more than one row existed for the same zone and date the higher value was retained.
 
 ### Statistical analysis
 
@@ -499,7 +499,7 @@ All analysis and figures were produced in R (version `r R.version$major`.`r R.ve
 
 ### Cross-source validation
 
-We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset. For SitReps 1–11, both datasets work from the same PDF files, so any differences between them reflect how the tables were read rather than which documents were used. From SitRep 12 onwards, INRB-UMIE received health-zone tables directly from INRB via WhatsApp; these may not correspond exactly to the figures published in each PDF. Two zone name variants between the datasets (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually. Values marked "ND" (not available) were treated as missing.
+We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE received health-zone tables directly from INRB via WhatsApp, which may not correspond exactly to the figures in the published PDFs. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
 
 #### National-level comparison — this repo, BVDOutbreakSize, and INRB-UMIE
 
@@ -625,7 +625,9 @@ Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed
 
 SitRep 014 (28 May) did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The dotted vertical line in the zone-level panels marks this single-day gap. Zone-level confirmed case counts returned in SitRep 015 (29 May); however, SitRep 016 (30 May) again provides only province-level aggregates (Ituri, Nord-Kivu, Sud-Kivu) without a health zone breakdown.
 
-From SitRep 014 onwards, cumulative suspect/probable counts are absent from the national total rows in the source PDFs — SitReps 014, 015, and 016 all report confirmed cases only in their cumulative national summaries. The orange-shaded region in the national "Suspected deaths" panel marks this ongoing break in our series. SitRep 014 also explicitly excluded suspected deaths pending the outcome of ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*); the INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF. Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is faithfully reproduced from the PDF and likely reflects an interim partial recount between the two reports.
+**Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable case breakdowns in the zone-level tables. From SitRep 016 (30 May) onwards, suspect/probable counts are absent from both the cumulative and the daily new-cases tables at all geographic levels. This appears to reflect a deliberate change in INSP's reporting practice — confirmed by SitRep 014's explicit note that suspected deaths were temporarily excluded pending ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*) — rather than an extraction error. The orange-shaded region in the national "Suspected deaths" panel marks this ongoing break in the series. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF.
+
+Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is reproduced faithfully from the PDF and likely reflects an interim partial recount.
 
 ```{r}
 #| label: fig-comparison
@@ -878,9 +880,9 @@ poe_ours <- read_csv(
 
 ### Data quality notes — response indicators
 
-Two points are worth flagging when comparing the response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three sub-columns without explaining what each represents. Both datasets handle this differently, so the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005 and 006 used an earlier table layout that made the in-bed count and new admissions columns harder to distinguish; the two datasets differ slightly on those dates as a result. From 22 May onwards, when the table format was standardised, the datasets are in close agreement.
+Two points are worth noting when comparing response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three unlabelled sub-columns; both datasets handle these differently and the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005–006 used an earlier table layout that made the in-bed count and new admissions columns ambiguous; the two datasets differ slightly on those dates. The table format was standardised from 22 May onwards and the datasets are in close agreement from that point.
 
-The INRB-UMIE processed sitrep files now extend through 30 May for hospital and PoE indicators (updated to build `2026-06-02`), and our automated extraction also covers through 30 May (SitRep 016). The validation panels therefore overlap fully through 30 May.
+The current INRB-UMIE build (`build-2026-06-07`) extends through 6 June 2026 for case counts and response indicators. Our automated extraction covers through SitRep 023 (7 June 2026). The validation panels therefore overlap through 6 June 2026.
 
 ```{r}
 #| label: fig-comparison-response
@@ -1057,6 +1059,6 @@ p
 
 ## Discussion
 
-Case counts have risen steadily over the reporting period. Confirmed cases remain a small fraction of all reported cases, which is typical in field settings where laboratory testing capacity is limited. The outbreak spans health zones in both Ituri and Nord-Kivu, pointing to the need for a coordinated response across provincial boundaries.
+Confirmed cases have risen progressively across the reporting period, now exceeding 500 nationally as of SitRep 023 (7 June 2026). The epidemic remains concentrated in Ituri province — predominantly Bunia, Rwampara, and Mongbwalu health zones — with a smaller number of cases in Nord-Kivu. Reporting of cumulative suspect and probable cases has been discontinued by INSP from SitRep 015 onwards, which limits the ability to track the full burden of disease and complicates comparisons with earlier reports.
 
-A few limitations are worth keeping in mind. Earlier situation reports did not break case counts down by health zone, so the zone-level data only covers part of the outbreak period. Response indicators such as hospitalisations and contacts traced are not formatted consistently across reports, which makes trend comparisons harder. Comparing our automated extraction with the INRB-UMIE manual series provides a useful cross-check: where the two agree we can be more confident in the figures; where they differ, it usually points to genuine ambiguity in the source document that is worth flagging to the data providers.
+Several limitations bear on interpretation of these data. Zone-level breakdowns are absent or incomplete in several early reports (SitReps 001–013) and in SitReps 014 and 016, so the zone-level series is not fully continuous. Response indicators are not formatted consistently across all reports, which introduces minor inconsistencies in the trend data. Automated extraction provides a useful complement to the INRB-UMIE manually coded series: agreement between the two gives confidence in a figure, while disagreement typically flags genuine ambiguity in the source document rather than an error in either dataset.
