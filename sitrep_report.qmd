@@ -709,7 +709,7 @@ ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, hei
 p
 ```
 
-Table @tbl-comparison summarises numerical differences at the most recent date available in each source per zone.
+@tbl-comparison summarises numerical differences at the most recent date available in each source per zone.
 
 ```{r}
 #| label: tbl-comparison
