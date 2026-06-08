@@ -240,6 +240,7 @@ n_total      <- n_unconf + n_conf
 cfr_pct      <- if (n_total > 0) round(n_deaths / n_total * 100, 1) else NA_real_
 n_zones      <- n_distinct(zone_ts$zone)
 n_provinces  <- n_distinct(zone_ts$province)
+n_sitreps    <- n_distinct(df$sitrep_source)
 ```
 
 ```{r}
@@ -454,14 +455,9 @@ nat_comparison <- ous_national |>
 Case counts and figures in this report are extracted from INSP DRC PDF situation reports by an AI vision model (Anthropic Claude `claude-sonnet-4-6`) without systematic manual verification of every value. Extraction errors are possible, particularly where PDF table layouts are complex or inconsistent. All values should be verified against the [original INSP DRC situation reports](https://insp.cd/ebola/) before any operational, clinical, or policy use. This report is intended for research and situational awareness only.
 :::
 
-::: {.callout-note}
-**SitReps 015 and 016 — sourced from INRB-UMIE GitHub.**
-Situation reports 015 (29 May 2026) and 016 (30 May 2026) had not been published on the INSP website at the time of extraction. The PDFs were obtained from the [INRB-UMIE/Ebola_DRC_2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) repository (`data/insp_sitrep/raw/`) and are recorded in `data/raw/manifest.json` with a `source_note` field to this effect. These entries will be superseded once INSP publishes the PDFs directly.
-:::
-
 ## Introduction
 
-This report summarises the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo. Data are sourced from official situation reports published by the Institut National de Santé Publique (INSP DRC), downloaded and processed automatically as new reports are published.
+This report documents automated extraction of epidemiological data from `r n_sitreps` situation reports (SitReps) published by the Institut National de Santé Publique (INSP DRC) during the 2026 Ebola (MVE) outbreak in the Democratic Republic of Congo, covering the period through `r latest_date`. The focus is on data completeness, extraction fidelity, and cross-source consistency rather than epidemiological interpretation.
 
 ## Methods
 
@@ -485,14 +481,16 @@ All analysis and figures were produced in R (version `r R.version$major`.`r R.ve
 
 We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE received health-zone tables directly from INRB via WhatsApp, which may not correspond exactly to the figures in the published PDFs. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
 
-## Results 
+## Results
 
-#### National-level comparison — this repo and INRB-UMIE
+The following sections compare our automated extraction against the INRB-UMIE manually coded dataset and document known data quality issues in the source PDFs.
+
+### National-level comparison — this repo and INRB-UMIE
 
 - **Cases agree across sources.** Cumulative suspected and confirmed case counts match exactly for every date in the overlap period; divergences are confined to the deaths series.
 - **Banner vs sub-table discrepancy (SitRep 010 onwards).** INSP's front-page banner and the per-zone sub-tables frequently disagree on national totals. This repo and INRB-UMIE (`national_*` files) both read from the banner. The disagreement reflects a structural feature of the PDFs.
 - **SitRep 012 (26 May) — two PDF versions.** The original extraction records 238 deaths; the revised version (SitRep\_012\_v2) records 246 deaths. No per-zone case table was present in either version to cross-check against the banner.
-- **INRB-UMIE national snapshot.** On 27 May the INRB-UMIE banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths — consistent with this repo.
+- **INRB-UMIE national coverage.** The current build (`build-2026-06-07`) includes national banner figures from SitRep 004 (14 May) through SitRep 022 (6 June 2026), and is consistent with this repo across all overlapping dates.
 
 ```{r}
 #| label: tbl-national-comparison
@@ -542,7 +540,7 @@ nat_comparison |>
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). Both automated and INRB-UMIE sources use identical PDFs; divergence reflects extraction method differences."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE uses zone tables received directly from INRB via WhatsApp rather than the published PDFs."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
@@ -702,7 +700,7 @@ p <- (p_nat | p_zones) +
   plot_layout(widths = c(1, 5), guides = "collect") +
   plot_annotation(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction (raw) vs INRB-UMIE (manual extraction, same source PDFs)",
+    subtitle = "Cumulative counts: automated extraction (raw) vs INRB-UMIE (manual extraction; NB: INRB-UMIE uses WhatsApp zone data from SitRep 012 onwards)",
     caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026",
     theme    = theme_sitrep(base_size = 9)
   ) &
@@ -711,11 +709,11 @@ ggsave(here("outputs", "plots", "fig-comparison.png"), plot = p, width = 12, hei
 p
 ```
 
-Table 2 presents numerical differences at the most recent date available in each source for each zone.
+Table @tbl-comparison summarises numerical differences at the most recent date available in each source per zone.
 
 ```{r}
 #| label: tbl-comparison
-#| tbl-cap: "Table 2. Cumulative case counts at the latest available date per zone: automated extraction vs INRB-UMIE. Delta = ours minus INRB-UMIE. Dashes indicate no data in that source."
+#| tbl-cap: "Cumulative case counts at the latest available date per zone: automated extraction vs INRB-UMIE. \u0394 = ours minus INRB-UMIE. Dashes indicate no data in that source. Note: INRB-UMIE zone data from SitRep 12 onwards is sourced from INRB WhatsApp reports rather than the published PDFs."
 ours_latest <- zone_ts |>
   group_by(zone) |>
   slice_max(date, n = 1) |>
@@ -892,7 +890,8 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
                      expand = expansion(mult = c(0, 0.12))) +
   labs(
     title    = "MVE DRC \u2014 POE screening — cross-source validation",
-    subtitle = "Daily aggregate totals: automated extraction vs INRB-UMIE (sum across checkpoints; INRB-UMIE extends to 26 May)",
+    subtitle = paste0("Daily aggregate totals: automated extraction vs INRB-UMIE (INRB-UMIE sums across individual checkpoints; extends to ",
+                       format(max(kraemer_poe$date, na.rm = TRUE), "%d %b %Y"), ")"),
     x = NULL, y = "Count", colour = NULL, linetype = NULL,
     caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026"
   ) +
@@ -972,7 +971,7 @@ p
 
 **Outbreak trajectory**
 
-- Confirmed cases have risen progressively and now exceed 500 nationally (SitRep 023, 7 June 2026).
+- `r n_conf` confirmed cases have been reported nationally as of `r latest_date`.
 - The epidemic is concentrated in Ituri province (Bunia, Rwampara, Mongbwalu), with a smaller number of cases in Nord-Kivu and Sud-Kivu.
 - INSP discontinued cumulative suspect/probable reporting from SitRep 015 onwards, limiting assessment of total burden and complicating comparisons with earlier reports.
 
