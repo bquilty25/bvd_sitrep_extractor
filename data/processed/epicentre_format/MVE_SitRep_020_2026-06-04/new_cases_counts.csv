@@ -1,0 +1,6 @@
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Bunia,,,12,,,0,55.0
+Ituri,Rwampara,,,4,,,0,93.0
+Ituri,Damas,,,1,,,0,
+Ituri,Lita,,,1,,,0,
+,Total,,,18,,,0,232.0

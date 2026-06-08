@@ -81,20 +81,32 @@ def _parse_last_modified(header_value: str) -> str:
         return ""
 
 
-# Regex to follow SitRep blog-post links found on category/listing pages
+# Regex to follow SitRep blog-post links found on category/listing pages.
+# Matches both legacy format  (sitrep-mv[eb]-n-NNN-YYYY)
+# and new format              (sitrep-nNNN-mv[eb]_DD-MM-YYYY  or similar)
 _POST_SLUG_RE = re.compile(
-    r'href=["\']((https?://insp\.cd/)?sitrep-mv[eb][^"\']+)["\']',
+    r'href=["\']((https?://insp\.cd/)?sitrep-n0*\d+[^"\']*)["\']'
+    r'|href=["\']((https?://insp\.cd/)?sitrep-mv[eb][^"\']+)["\']',
     re.IGNORECASE,
 )
 
-# Regex to extract sitrep number from a source-page slug, e.g. sitrep-mve-n-010-2026 → 010
-_SITREP_NUM_RE = re.compile(r'sitrep-mv[eb]-n-0*(\d+)-\d{4}', re.IGNORECASE)
+# Regex to extract sitrep number from a source-page slug.
+# Handles: sitrep-mve-n-010-2026  AND  sitrep-n023-mvb_…
+_SITREP_NUM_RE = re.compile(
+    r'sitrep-mv[eb]-n-0*(\d+)-\d{4}'
+    r'|sitrep-n0*(\d+)',
+    re.IGNORECASE,
+)
 
 
 def _sitrep_number_from_page(source_page: str) -> str | None:
     """Return zero-padded sitrep number parsed from a source-page URL, or None."""
     m = _SITREP_NUM_RE.search(source_page)
-    return f"{int(m.group(1)):03d}" if m else None
+    if not m:
+        return None
+    # group(1) = legacy format, group(2) = new format
+    num_str = m.group(1) or m.group(2)
+    return f"{int(num_str):03d}"
 
 
 def _canonical_filename(sitrep_num: str, date_str: str) -> str:
@@ -111,6 +123,8 @@ def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
     one level deep to pick up PDFs embedded in individual post pages.
     Returns a deduplicated list of dicts: {url, title, source_page}.
     """
+    import base64, json as _json
+
     found: dict = {}
     a_pattern = re.compile(
         r'<a[^>]+href=["\']([^"\']*wp-content/uploads/[^"\']*\.pdf)["\'][^>]*>(.*?)</a>',
@@ -119,18 +133,34 @@ def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
     session = requests.Session()
     session.headers["User-Agent"] = "MSF-Epicentre-SitRep-Fetcher/1.0"
 
+    def _add(pdf_url: str, source_page: str, title: str) -> None:
+        if not (_is_relevant(pdf_url) and _is_recent_enough(pdf_url, min_ym)):
+            return
+        if pdf_url in found:
+            return
+        found[pdf_url] = {"url": pdf_url, "title": title, "source_page": source_page}
+
     def _scan(html: str, source_page: str, default_title: str = "") -> None:
         """Extract PDF links from html and add new, relevant ones to found."""
+        # 1. Standard <a href=...pdf> links
         for m in a_pattern.finditer(html):
             pdf_url = urljoin(source_page, m.group(1))
-            if not (_is_relevant(pdf_url) and _is_recent_enough(pdf_url, min_ym)):
-                continue
-            if pdf_url in found:
-                continue
             raw_text = re.sub(r'<[^>]+>', '', m.group(2)).strip()
             filename  = unquote(Path(urlparse(pdf_url).path).name)
             title     = raw_text or default_title or _title_from_filename(filename)
-            found[pdf_url] = {"url": pdf_url, "title": title, "source_page": source_page}
+            _add(pdf_url, source_page, title)
+
+        # 2. PDF Embedder (pdfemb-data=<base64-JSON>) iframes
+        for m in re.finditer(r'pdfemb-data=([A-Za-z0-9+/=]+)', html):
+            try:
+                data = _json.loads(base64.b64decode(m.group(1) + "==").decode())
+                pdf_url = data.get("url", "")
+                if pdf_url:
+                    filename = unquote(Path(urlparse(pdf_url).path).name)
+                    title = default_title or _title_from_filename(filename)
+                    _add(pdf_url, source_page, title)
+            except Exception:
+                pass
 
     for page_url in pages:
         try:
@@ -146,7 +176,8 @@ def discover_pdf_urls(pages: list, min_ym: str = DEFAULT_SINCE) -> list:
         _scan(html, page_url)
 
         # Level 2: follow SitRep blog-post links and scan each post for PDFs
-        raw_post_urls = [m.group(1) for m in _POST_SLUG_RE.finditer(html)]
+        # _POST_SLUG_RE has two alternatives: group(1) or group(3) holds the URL
+        raw_post_urls = [m.group(1) or m.group(3) for m in _POST_SLUG_RE.finditer(html)]
         post_urls = list(dict.fromkeys(
             u if u.startswith("http") else f"https://insp.cd/{u.lstrip('/')}"
             for u in raw_post_urls
