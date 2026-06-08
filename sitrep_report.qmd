@@ -43,9 +43,10 @@ df <- df_raw |>
     # Normalise zone spellings that vary across SitRep versions
     zone = case_match(
       zone,
-      "ARU"         ~ "Aru",
-      "Karissibi"   ~ "Karisimbi",
+      "ARU"          ~ "Aru",
+      "Karissibi"    ~ "Karisimbi",
       "Miti Murhesa" ~ "Miti-Murhesa",
+      "TOTAL"        ~ "Total",
       .default = zone
     )
   ) |>
