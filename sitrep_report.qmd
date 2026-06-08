@@ -501,13 +501,15 @@ All analysis and figures were produced in R (version `r R.version$major`.`r R.ve
 
 We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE received health-zone tables directly from INRB via WhatsApp, which may not correspond exactly to the figures in the published PDFs. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
 
+## Results 
+
 #### National-level comparison — this repo, BVDOutbreakSize, and INRB-UMIE
 
-At the national level, cumulative suspected and confirmed case counts agree exactly across all three sources for every date in the overlap period. The only divergences are in the deaths series.
-
-From SitRep 10 onwards, INSP's front-page banner figures and the per-health-zone sub-tables frequently report different national totals. INRB-UMIE tracks both separately: files named `national_*` contain the banner figures, which represent INSP's official national position; files without `national` in the name contain the zone-level sub-table values. This repo also reads from the front-page banner. BVDOutbreakSize, by contrast, derives national totals by summing the per-zone rows. The disagreement between these approaches therefore reflects a structural feature of the source documents — INSP's own banner and sub-tables often disagree — rather than an error in either dataset.
-
-On 23 May (SitRep 009), this repo and the INRB-UMIE national figure both record 119 suspected deaths, matching the front-page banner. [BVDOutbreakSize](https://github.com/epiforecasts/BVDOutbreakSize/pull/140) (PR \#140) records 220, which is the per-zone row sum. Both values are internally consistent with their respective source tables. On 26 May (SitRep 012), both a first and a revised version of the PDF were processed. The original extraction (SitRep\_012) records 238 deaths (matching BVDOutbreakSize), while the revised extraction (SitRep\_012\_v2) records 246 deaths; there was no per-zone case table in this report against which to cross-check the banner figure. The INRB-UMIE national snapshot currently covers 27 May only (back-filling to SitRep 10 is in progress); on that date their banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths, consistent with this repo.
+- **Cases agree across all sources.** Cumulative suspected and confirmed case counts match exactly for every date in the overlap period; divergences are confined to the deaths series.
+- **Banner vs sub-table discrepancy (SitRep 010 onwards).** INSP's front-page banner and the per-zone sub-tables frequently disagree on national totals. This repo and INRB-UMIE (`national_*` files) both read from the banner; BVDOutbreakSize sums the per-zone rows. The disagreement reflects a structural feature of the PDFs, not an error in either dataset.
+- **SitRep 009 (23 May) — deaths divergence.** This repo and INRB-UMIE both record 119 suspected deaths (banner figure); [BVDOutbreakSize PR \#140](https://github.com/epiforecasts/BVDOutbreakSize/pull/140) records 220 (per-zone sum). Both are internally consistent with their respective source tables.
+- **SitRep 012 (26 May) — two PDF versions.** The original extraction records 238 deaths (matching BVDOutbreakSize); the revised version (SitRep\_012\_v2) records 246 deaths. No per-zone case table was present in either version to cross-check against the banner.
+- **INRB-UMIE national snapshot.** On 27 May the INRB-UMIE banner-derived figures are 906 suspected cases, 223 suspected deaths, and 17 confirmed deaths — consistent with this repo.
 
 ```{r}
 #| label: tbl-national-comparison
@@ -556,7 +558,11 @@ nat_comparison |>
 
 #### Internal consistency — zone sum vs national aggregate
 
-As an internal check, we summed the cumulative counts across all health zones present in each situation report and compared the result with the national aggregate extracted from the front-page banner. Where the two disagree, this typically reflects one of three structural features: early reports that provided only a province-level Ituri total rather than individual zone rows; reports where not all zones were individually listed; or the banner vs sub-table discrepancy that INSP introduced from SitRep 10 onwards (described above). Rows with a non-zero difference are highlighted.
+Cumulative zone-row sums are compared with the national banner figure for each date. Highlighted rows (non-zero Δ) arise from three causes:
+
+- Early reports (SitReps 001–003) provide only a province-level Ituri total, not individual zone rows.
+- Some reports omit certain zones from the breakdown table.
+- The banner vs sub-table discrepancy present from SitRep 010 onwards (described above).
 
 ```{r}
 #| label: tbl-zone-sum-check
@@ -619,15 +625,13 @@ zone_sum_vs_nat |>
 
 ### Data quality notes — case counts
 
-Two issues in the Mongbwalu data are worth noting. First, the early INRB-UMIE data shows 246 suspected cases at Mongbwalu on 14 May. Our earliest report (SitRep 001) records the same 246 figure, but only as a total for the whole of Ituri province — it does not break the number down by health zone. The first report with a Mongbwalu-specific count in our data is SitRep 004 (18 May, 302 suspected cases). As a result, the Mongbwalu line in the figures below starts later than in the INRB-UMIE data; this is a gap in zone-level reporting, not a sign that cases only began in May.
+- **Mongbwalu zone-level data starts late.** SitRep 001 records 246 suspected cases for all of Ituri province combined; no Mongbwalu-specific count appears until SitRep 004 (18 May, 302 suspected). The Mongbwalu line therefore starts later than in INRB-UMIE — this is a reporting gap, not a case-onset gap.
+- **Mongbwalu confirmed-case revision (22 May).** Both datasets show cumulative confirmed cases falling from 14 (21 May) to 10 (22 May). Our series holds the value at 14 (counts cannot decrease); INRB-UMIE shows the raw figure. This is likely a downward revision in the source PDF.
+- **SitRep 014 (28 May) — no zone breakdown.** Only a national aggregate was published during an official case-count revision. The dotted vertical line in zone panels marks this gap.
+- **SitRep 016 (30 May) — province-level only.** Zone-level breakdowns return in SitRep 015 (29 May) but are absent again in SitRep 016, which reports only Ituri / Nord-Kivu / Sud-Kivu provincial aggregates.
+- **SitRep 009 (23 May) — deaths dip.** Cumulative suspected deaths fell from 160 (20 May) to 119 before recovering to 223 in SitRep 010. This is reproduced faithfully from the PDF and likely reflects an interim partial recount.
 
-Second, both our data and the INRB-UMIE data show a fall in cumulative confirmed cases at Mongbwalu between 21 May (14 cases) and 22 May (10 cases). Cumulative case counts should not decrease, so this is likely a downward revision in the 22 May situation report rather than an error in how the data were extracted. In our figures the value is held at 14 on 22 May (since we do not allow counts to fall); the INRB-UMIE series shows the raw figure.
-
-SitRep 014 (28 May) did not include a zone-level breakdown — only a national aggregate was published during an official revision of case counts. The dotted vertical line in the zone-level panels marks this single-day gap. Zone-level confirmed case counts returned in SitRep 015 (29 May); however, SitRep 016 (30 May) again provides only province-level aggregates (Ituri, Nord-Kivu, Sud-Kivu) without a health zone breakdown.
-
-**Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable case breakdowns in the zone-level tables. From SitRep 016 (30 May) onwards, suspect/probable counts are absent from both the cumulative and the daily new-cases tables at all geographic levels. This appears to reflect a deliberate change in INSP's reporting practice — confirmed by SitRep 014's explicit note that suspected deaths were temporarily excluded pending ongoing investigations (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*) — rather than an extraction error. The orange-shaded region in the national "Suspected deaths" panel marks this ongoing break in the series. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application rather than the revised PDF.
-
-Additionally, SitRep 009 (23 May) reported 119 cumulative suspected deaths — lower than the 160 reported on 20 May — before SitRep 010 revised the figure upward to 223. This mid-series dip is reproduced faithfully from the PDF and likely reflects an interim partial recount.
+**Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable breakdowns in the zone tables. From SitRep 016 (30 May) onwards they are absent from both cumulative and daily new-cases tables at all geographic levels. SitRep 014 stated explicitly that suspected deaths were temporarily excluded pending investigation results (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*). The orange-shaded region in the national "Suspected deaths" panel marks this ongoing series break. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application.
 
 ```{r}
 #| label: fig-comparison
@@ -880,9 +884,9 @@ poe_ours <- read_csv(
 
 ### Data quality notes — response indicators
 
-Two points are worth noting when comparing response indicator figures. For Rwampara on 21 May, SitRep 007 splits the data across three unlabelled sub-columns; both datasets handle these differently and the 21 May Rwampara figures should be treated with caution. For 20–21 May more broadly, SitReps 005–006 used an earlier table layout that made the in-bed count and new admissions columns ambiguous; the two datasets differ slightly on those dates. The table format was standardised from 22 May onwards and the datasets are in close agreement from that point.
-
-The current INRB-UMIE build (`build-2026-06-07`) extends through 6 June 2026 for case counts and response indicators. Our automated extraction covers through SitRep 023 (7 June 2026). The validation panels therefore overlap through 6 June 2026.
+- **Rwampara 21 May (SitRep 007).** Data are split across three unlabelled sub-columns; both datasets handle these differently. Values for that date should be treated with caution.
+- **20–21 May (SitReps 005–006).** An earlier table layout made in-bed count and new admissions columns ambiguous; minor differences between datasets on those dates result from this. Agreement is close from 22 May onwards when the format was standardised.
+- **Coverage.** INRB-UMIE (`build-2026-06-07`) extends through 6 June 2026; our extraction covers through SitRep 023 (7 June 2026). Validation panels overlap through 6 June 2026.
 
 ```{r}
 #| label: fig-comparison-response
@@ -1059,6 +1063,14 @@ p
 
 ## Discussion
 
-Confirmed cases have risen progressively across the reporting period, now exceeding 500 nationally as of SitRep 023 (7 June 2026). The epidemic remains concentrated in Ituri province — predominantly Bunia, Rwampara, and Mongbwalu health zones — with a smaller number of cases in Nord-Kivu. Reporting of cumulative suspect and probable cases has been discontinued by INSP from SitRep 015 onwards, which limits the ability to track the full burden of disease and complicates comparisons with earlier reports.
+**Outbreak trajectory**
 
-Several limitations bear on interpretation of these data. Zone-level breakdowns are absent or incomplete in several early reports (SitReps 001–013) and in SitReps 014 and 016, so the zone-level series is not fully continuous. Response indicators are not formatted consistently across all reports, which introduces minor inconsistencies in the trend data. Automated extraction provides a useful complement to the INRB-UMIE manually coded series: agreement between the two gives confidence in a figure, while disagreement typically flags genuine ambiguity in the source document rather than an error in either dataset.
+- Confirmed cases have risen progressively and now exceed 500 nationally (SitRep 023, 7 June 2026).
+- The epidemic is concentrated in Ituri province (Bunia, Rwampara, Mongbwalu), with a smaller number of cases in Nord-Kivu and Sud-Kivu.
+- INSP discontinued cumulative suspect/probable reporting from SitRep 015 onwards, limiting assessment of total burden and complicating comparisons with earlier reports.
+
+**Limitations**
+
+- Zone-level breakdowns are absent or incomplete in SitReps 001–013 and in SitReps 014 and 016; the zone-level series is therefore not fully continuous.
+- Response indicator table layouts varied across early reports, introducing minor inconsistencies in trend data.
+- Automated extraction and INRB-UMIE manual coding provide complementary checks: agreement increases confidence in a figure; disagreement typically reflects genuine ambiguity in the source document.
