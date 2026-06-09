@@ -536,6 +536,34 @@ nat_comparison |>
 
 **Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable breakdowns in the zone tables. From SitRep 016 (30 May) onwards they are absent from both cumulative and daily new-cases tables at all geographic levels. SitRep 014 stated explicitly that suspected deaths were temporarily excluded pending investigation results (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*). The orange-shaded region in the national "Suspected deaths" panel marks this ongoing series break. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application.
 
+### Daily new cases (national)
+
+```{r}
+#| label: fig-daily-new
+#| fig-cap: "Daily new cases reported nationally by case classification (from 'Nouveaux' rows in each SitRep). Suspect/probable cases absent from SitRep 016 onwards."
+#| fig-width: 9
+#| fig-height: 4
+daily_new |>
+  transmute(date,
+            `Confirmed`        = confirmed,
+            `Suspect/probable` = unconfirmed) |>
+  pivot_longer(-date, names_to = "type", values_to = "n") |>
+  filter(!is.na(n)) |>
+  mutate(type = factor(type, levels = c("Suspect/probable", "Confirmed"))) |>
+  ggplot(aes(x = date, y = n, fill = type)) +
+  geom_col(position = "stack", width = 1) +
+  scale_fill_manual(values = c("Suspect/probable" = "#56B4E9",
+                               "Confirmed"        = "#D55E00")) +
+  scale_x_date(date_labels = "%d %b", date_breaks = "3 days") +
+  scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.1))) +
+  labs(x = NULL, y = "Daily new cases", fill = NULL,
+       title = "MVE DRC — Daily new cases (national aggregate)") +
+  theme_sitrep() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+### Cumulative counts by zone and source
+
 ```{r}
 #| label: fig-comparison
 #| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE uses zone tables received directly from INRB via WhatsApp rather than the published PDFs."
