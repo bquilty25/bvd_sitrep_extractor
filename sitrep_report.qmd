@@ -564,7 +564,7 @@ our_for_comp <- zone_ts |>
             confirmed   = confirmed_raw,
             suspected   = unconfirmed_raw,
             deaths_susp = deaths_susp_raw,
-            deaths      = deaths_raw,
+            deaths      = deaths,
             source      = "Automated extraction")
 
 # National totals — ours (raw extracted values, no cummax enforcement)
@@ -575,7 +575,7 @@ our_nat_for_comp <- ous_national |>
             confirmed   = ours_confirmed,
             suspected   = ours_suspected,
             deaths_susp = ours_deaths_susp,
-            deaths      = ours_deaths_susp,
+            deaths      = ours_deaths,
             source      = "Automated extraction")
 
 # INRB-UMIE deaths_susp = suspected only; deaths = suspected + confirmed (total)
