@@ -57,6 +57,7 @@ df <- df_raw |>
     confirmed   = as.numeric(cases_confirmed),
     deaths      = coalesce(as.numeric(deaths_suspected), as.numeric(deaths_probable), as.numeric(deaths_confirmed)),
     deaths_susp = as.numeric(deaths_suspected),
+    deaths_conf = as.numeric(deaths_confirmed),
     # Some rows are aggregate/unknown but were not flagged as such at extraction.
     # Mark them here so they are excluded from zone-level plots.
     is_agg      = (toupper(is_aggregate) == "TRUE") |
@@ -177,6 +178,7 @@ zone_ts <- df |>
     unconfirmed_raw = unconfirmed,
     deaths_raw      = deaths,
     deaths_susp_raw = deaths_susp,
+    deaths_conf_raw = deaths_conf,
     rev_confirmed   = confirmed   < lag(cummax(replace_na(confirmed,   0L)), default = 0L),
     rev_unconfirmed = unconfirmed < lag(cummax(replace_na(unconfirmed, 0L)), default = 0L),
     # Apply cummax only over observed values; leave NAs before the first
@@ -184,7 +186,8 @@ zone_ts <- df |>
     unconfirmed = {x <- unconfirmed; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
     confirmed   = {x <- confirmed;   i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
     deaths      = {x <- deaths;      i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
-    deaths_susp = {x <- deaths_susp; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x}
+    deaths_susp = {x <- deaths_susp; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x},
+    deaths_conf = {x <- deaths_conf; i <- !is.na(x); if (any(i)) x[i] <- cummax(x[i]); x}
   ) |>
   ungroup()
 
@@ -415,22 +418,13 @@ parsed_kraemer_nat <-
 
 # Pull our national aggregate Cumules rows
 # Priority: province=="Total" > zone=="Total" > both NA
-ous_national <- df_raw |>
+ous_national <- df |>
   filter(
     count_type == "Cumules",
     toupper(is_aggregate) == "TRUE",
     (zone == "Total" | province == "Total" | (is.na(zone) & is.na(province)))
   ) |>
   mutate(
-    date           = dmy(count_end_date),
-    suspected      = as.numeric(cases_suspect),
-    confirmed      = as.numeric(cases_confirmed),
-    deaths_susp_raw = as.numeric(deaths_suspected),
-    deaths         = coalesce(
-      as.numeric(deaths_suspected),
-      as.numeric(deaths_probable),
-      as.numeric(deaths_confirmed)
-    ),
     row_priority = case_when(
       province == "Total" ~ 3L,
       zone == "Total"     ~ 2L,
@@ -440,9 +434,12 @@ ous_national <- df_raw |>
   group_by(date) |>
   slice_max(order_by = row_priority, n = 1, with_ties = FALSE) |>
   ungroup() |>
-  transmute(date, sitrep_source, ours_suspected = suspected,
-            ours_confirmed = confirmed, ours_deaths = deaths,
-            ours_deaths_susp = deaths_susp_raw)
+  transmute(date, sitrep_source,
+            ours_suspected   = suspect,
+            ours_confirmed   = confirmed,
+            ours_deaths      = deaths,
+            ours_deaths_susp = deaths_susp,
+            ours_deaths_conf = deaths_conf)
 
 
 # Join our extraction with INRB-UMIE national totals
@@ -564,7 +561,7 @@ our_for_comp <- zone_ts |>
             confirmed   = confirmed_raw,
             suspected   = unconfirmed_raw,
             deaths_susp = deaths_susp_raw,
-            deaths      = deaths,
+            deaths_conf = deaths_conf,
             source      = "Automated extraction")
 
 # National totals — ours (raw extracted values, no cummax enforcement)
@@ -575,14 +572,14 @@ our_nat_for_comp <- ous_national |>
             confirmed   = ours_confirmed,
             suspected   = ours_suspected,
             deaths_susp = ours_deaths_susp,
-            deaths      = ours_deaths,
+            deaths_conf = ours_deaths_conf,
             source      = "Automated extraction")
 
 # INRB-UMIE deaths_susp = suspected only; deaths = suspected + confirmed (total)
 kraemer_for_comp <- kraemer |>
   left_join(zone_province_lut, by = "zone") |>
   transmute(zone, province, date, confirmed, suspected,
-            deaths_susp, deaths,
+            deaths_susp, deaths_conf,
             source)
 
 # INRB-UMIE national totals
@@ -593,23 +590,22 @@ kraemer_nat_for_comp <- parsed_kraemer_nat |>
             confirmed   = kraemer_confirmed,
             suspected   = kraemer_suspected,
             deaths_susp = kraemer_susp_deaths,
-            deaths      = coalesce(kraemer_susp_deaths, 0) +
-                          coalesce(kraemer_conf_deaths, 0),
+            deaths_conf = kraemer_conf_deaths,
             source      = "INRB-UMIE")
 
 comp_long <- bind_rows(our_nat_for_comp, kraemer_nat_for_comp,
                        our_for_comp, kraemer_for_comp) |>
-  pivot_longer(c(confirmed, suspected, deaths_susp, deaths),
+  pivot_longer(c(confirmed, suspected, deaths_susp, deaths_conf),
                names_to = "metric", values_to = "count") |>
   mutate(
     metric = recode(metric,
       "confirmed"   = "Confirmed cases",
       "suspected"   = "Suspect/probable cases",
       "deaths_susp" = "Suspected deaths",
-      "deaths"      = "Total deaths (coalesced)"
+      "deaths_conf" = "Confirmed deaths"
     ),
     metric   = factor(metric, levels = c("Confirmed cases", "Suspect/probable cases",
-                                          "Suspected deaths", "Total deaths (coalesced)")),
+                                          "Suspected deaths", "Confirmed deaths")),
     source   = factor(source, levels = c("Automated extraction", "INRB-UMIE")),
     province = factor(province, levels = c("National", "Ituri", "Nord-Kivu")),
     zone     = factor(zone, levels = c("National", ZONE_LEVELS))
