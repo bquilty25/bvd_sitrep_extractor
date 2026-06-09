@@ -1,0 +1,10 @@
+﻿province,zone_de_sante,cas_suspects,cas_probables,cas_confirmes,deces_suspects,deces_probables,deces_confirmes,contacts
+Ituri,Rwampara,,,13,,,,
+Ituri,Bunia,,,10,,,,
+Ituri,Mongbwalu,,,6,,,,
+Ituri,Nyankunde,,,2,,,,
+Nord-Kivu,Beni,,,4,,,,
+Ituri,,,,31,,,,
+Nord-Kivu,,,,4,,,4,
+Sud-Kivu,,,,0,,,0,
+,,94,,35,,,10,
