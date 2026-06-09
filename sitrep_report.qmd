@@ -477,7 +477,7 @@ All analysis and figures were produced in R (version `r R.version$major`.`r R.ve
 
 ### Cross-source validation
 
-We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE zone-level data diverges from the published PDFs; the exact supplementary source used is not documented in their public repository. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
+We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE note that health-zone data is occasionally sent directly from INSP to INRB and may not feature in the published PDFs; this explains divergence at zone level from SitRep 12 onwards. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
 
 ## Results
 
@@ -534,7 +534,9 @@ nat_comparison |>
 - **SitRep 016 (30 May) — province-level only.** Zone-level breakdowns return in SitRep 015 (29 May) but are absent again in SitRep 016, which reports only Ituri / Nord-Kivu / Sud-Kivu provincial aggregates.
 - **SitRep 009 (23 May) — deaths dip.** Cumulative suspected deaths fell from 160 (20 May) to 119 before recovering to 223 in SitRep 010. This is reproduced faithfully from the PDF and likely reflects an interim partial recount.
 
-**Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable breakdowns in the zone tables. From SitRep 016 (30 May) onwards they are absent from both cumulative and daily new-cases tables at all geographic levels. SitRep 014 stated explicitly that suspected deaths were temporarily excluded pending investigation results (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*). The orange-shaded region in the national "Suspected deaths" panel marks this ongoing series break. The INRB-UMIE tracker retains 236 suspected deaths on 28 May, sourced from the live INRB application.
+**Suspect and probable case reporting discontinued.** From SitRep 015 (29 May) onwards, INSP stopped publishing cumulative suspect/probable breakdowns in the zone tables. From SitRep 016 (30 May) onwards they are absent from both cumulative and daily new-cases tables at all geographic levels. SitRep 014 stated explicitly that suspected deaths were temporarily excluded pending investigation results (*"Les décès suspects ont été temporairement exclus du comptage dans l'attente des résultats des investigations en cours"*). The orange-shaded region in the national "Suspected deaths" panel marks this ongoing series break.
+
+**INRB-UMIE suspected cases after SitRep 016 are not cumulative.** From SitRep 016 onwards, INSP's banner split suspect reporting into 'Cas suspects en cours d'investigation' (under investigation) and 'Cas suspects en isolement' (in isolation). INRB-UMIE sum these two active categories as their national suspected case figure. This means the INRB-UMIE suspected case series from SitRep 016 onwards reflects **active suspects at a point in time**, not cumulative ever-suspected — explaining the declining trend.
 
 ### Daily new cases (national)
 
@@ -566,7 +568,7 @@ daily_new |>
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE zone-level data diverges from the published PDFs (exact supplementary source not documented in their public repository)."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE zone data may include figures sent directly from INSP to INRB that do not appear in the published PDFs. From SitRep 16 onwards INRB-UMIE national suspected cases reflect active suspects (under investigation + in isolation), not cumulative totals."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
