@@ -661,6 +661,7 @@ base_theme <- list(
 
 p_nat <- ggplot(comp_long_nat,
                 aes(x = date, y = count, colour = source, linetype = source)) +
+  # Shaded region: suspected deaths absent from INSP PDFs (SitRep 014+)
   geom_rect(
     data = tibble(metric = factor("Suspected deaths",
                                   levels = levels(comp_long_nat$metric)),
@@ -676,6 +677,24 @@ p_nat <- ggplot(comp_long_nat,
                   label = "Suspected deaths\nabsent SitRep 014+"),
     aes(x = x, y = y, label = label),
     hjust = -0.04, vjust = 1.1, size = 1.8, colour = "darkorange3",
+    inherit.aes = FALSE
+  ) +
+  # Shaded region: INRB-UMIE switches to active suspects (SitRep 016+)
+  geom_rect(
+    data = tibble(metric = factor("Suspect/probable cases",
+                                  levels = levels(comp_long_nat$metric)),
+                  xmin = as.Date("2026-05-30"), xmax = Inf,
+                  ymin = -Inf, ymax = Inf),
+    aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+    fill = "purple", alpha = 0.08, inherit.aes = FALSE
+  ) +
+  geom_text(
+    data = tibble(metric = factor("Suspect/probable cases",
+                                  levels = levels(comp_long_nat$metric)),
+                  x = as.Date("2026-05-30"), y = Inf,
+                  label = "INRB-UMIE: active\nsuspects only\n(SitRep 016+)"),
+    aes(x = x, y = y, label = label),
+    hjust = -0.04, vjust = 1.1, size = 1.8, colour = "purple4",
     inherit.aes = FALSE
   ) +
   geom_line(linewidth = 0.9, na.rm = TRUE) +
