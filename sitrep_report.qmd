@@ -477,7 +477,7 @@ All analysis and figures were produced in R (version `r R.version$major`.`r R.ve
 
 ### Cross-source validation
 
-We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE received health-zone tables directly from INRB via WhatsApp, which may not correspond exactly to the figures in the published PDFs. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
+We checked our automated extraction against the [INRB-UMIE Ebola DRC 2026](https://github.com/INRB-UMIE/Ebola_DRC_2026) manually coded dataset, which extends through SitRep 22 (6 June 2026) in the current build. For SitReps 1–11 both datasets use the same PDF files, so differences reflect extraction method rather than source documents. From SitRep 12 onwards INRB-UMIE zone-level data diverges from the published PDFs; the exact supplementary source used is not documented in their public repository. Two zone name variants (Mongbwalu/Mongbalu and Nyankunde/Nyakunde) were matched manually; values marked "ND" were treated as missing.
 
 ## Results
 
@@ -551,7 +551,7 @@ daily_new |>
   filter(!is.na(n)) |>
   mutate(type = factor(type, levels = c("Suspect/probable", "Confirmed"))) |>
   ggplot(aes(x = date, y = n, fill = type)) +
-  geom_col(position = "stack", width = 1) +
+  geom_col(position = "stack", width = 0.9) +
   scale_fill_manual(values = c("Suspect/probable" = "#56B4E9",
                                "Confirmed"        = "#D55E00")) +
   scale_x_date(date_labels = "%d %b", date_breaks = "3 days") +
@@ -566,7 +566,7 @@ daily_new |>
 
 ```{r}
 #| label: fig-comparison
-#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE uses zone tables received directly from INRB via WhatsApp rather than the published PDFs."
+#| fig-cap: "Cross-source comparison of cumulative confirmed cases, suspect/probable cases, and outbreak deaths by health zone. Solid lines: automated extraction (raw); dashed lines: INRB-UMIE (manual extraction). For SitReps 1–11 both sources use the same PDFs; from SitRep 12 onwards INRB-UMIE zone-level data diverges from the published PDFs (exact supplementary source not documented in their public repository)."
 #| fig-width: 12
 #| fig-height: 14
 PAL_COMP <- c(
@@ -725,7 +725,7 @@ p <- (p_nat | p_zones) +
   plot_layout(widths = c(1, 5), guides = "collect") +
   plot_annotation(
     title    = "MVE DRC \u2014 Cross-source validation",
-    subtitle = "Cumulative counts: automated extraction (raw) vs INRB-UMIE (manual extraction; NB: INRB-UMIE uses WhatsApp zone data from SitRep 012 onwards)",
+    subtitle = "Cumulative counts: automated extraction (raw) vs INRB-UMIE (manual extraction; NB: INRB-UMIE zone data diverges from published PDFs from SitRep 012 onwards)",
     caption  = "Sources: INSP DRC situation reports; github.com/INRB-UMIE/Ebola_DRC_2026",
     theme    = theme_sitrep(base_size = 9)
   ) &
@@ -738,7 +738,7 @@ p
 
 ```{r}
 #| label: tbl-comparison
-#| tbl-cap: "Cumulative case counts at the latest available date per zone: automated extraction vs INRB-UMIE. \u0394 = ours minus INRB-UMIE. Dashes indicate no data in that source. Note: INRB-UMIE zone data from SitRep 12 onwards is sourced from INRB WhatsApp reports rather than the published PDFs."
+#| tbl-cap: "Cumulative case counts at the latest available date per zone: automated extraction vs INRB-UMIE. \u0394 = ours minus INRB-UMIE. Dashes indicate no data in that source. Note: INRB-UMIE zone data from SitRep 12 onwards diverges from the published PDFs (exact supplementary source not documented in their public repository)."
 ours_latest <- zone_ts |>
   group_by(zone) |>
   slice_max(date, n = 1) |>
