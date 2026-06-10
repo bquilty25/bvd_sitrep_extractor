@@ -556,7 +556,7 @@ daily_new |>
   geom_col(position = "stack", width = 0.9) +
   scale_fill_manual(values = c("Suspect/probable" = "#56B4E9",
                                "Confirmed"        = "#D55E00")) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "3 days") +
+  scale_x_date(breaks = scales::breaks_width("1 week"), labels = scales::label_date("%d %b")) +
   scale_y_continuous(breaks = int_breaks, expand = expansion(mult = c(0, 0.1))) +
   labs(x = NULL, y = "Daily new cases", fill = NULL,
        title = "MVE DRC — Daily new cases (national aggregate)") +
@@ -648,7 +648,7 @@ comp_long_zones <- filter(comp_long, zone != "National")
 base_theme <- list(
   scale_colour_manual(values = PAL_COMP),
   scale_linetype_manual(values = LTY_COMP),
-  scale_x_date(date_labels = "%d %b", date_breaks = "2 days"),
+  scale_x_date(breaks = scales::breaks_width("1 week"), labels = scales::label_date("%d %b")),
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.15))),
   theme_sitrep(base_size = 9),
@@ -883,7 +883,7 @@ p <- ggplot(resp_comp, aes(x = date, y = count, colour = source, linetype = sour
   facet_nested(metric ~ zone, scales = "free_y") +
   scale_colour_manual(values = PAL_RESP) +
   scale_linetype_manual(values = LTY_RESP) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_x_date(breaks = scales::breaks_width("1 week"), labels = scales::label_date("%d %b")) +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.15))) +
   labs(
@@ -931,7 +931,7 @@ p <- ggplot(poe_comp, aes(x = date, y = count, colour = source, linetype = sourc
   facet_wrap(~ metric, scales = "free_y", ncol = 2) +
   scale_colour_manual(values = PAL_RESP) +
   scale_linetype_manual(values = LTY_RESP) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_x_date(breaks = scales::breaks_width("1 week"), labels = scales::label_date("%d %b")) +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.12))) +
   labs(
@@ -993,7 +993,7 @@ p <- ggplot(contacts_comp,
   facet_nested(~ province + zone, scales = "free_y") +
   scale_colour_manual(values = PAL_COMP[c("Automated extraction","INRB-UMIE")]) +
   scale_linetype_manual(values = LTY_COMP[c("Automated extraction","INRB-UMIE")]) +
-  scale_x_date(date_labels = "%d %b", date_breaks = "2 days") +
+  scale_x_date(breaks = scales::breaks_width("1 week"), labels = scales::label_date("%d %b")) +
   scale_y_continuous(breaks = int_breaks, limits = c(0, NA),
                      expand = expansion(mult = c(0, 0.15))) +
   labs(
