@@ -78,27 +78,43 @@ COL_GREY  <- "grey60"
 ```
 
 ```{r data}
-# ── Tableau 3 data (SitReps 018–025) ──────────────────────────────────────────
-# Data dates are the "au DD mois YYYY" dates from each Tableau 3 header,
-# which are consistently one day before the sitrep publication date.
-# SR018 header names the variant rather than the date; data date inferred as
-# publication date − 1 day (= 2026-06-01), consistent with the series.
-ct_raw <- tribble(
-  ~sitrep, ~data_date,    ~listed, ~followed,
-  18L,     "2026-06-01",   4010L,   1760L,
-  19L,     "2026-06-02",   4293L,   1955L,
-  20L,     "2026-06-03",   4551L,   2525L,
-  21L,     "2026-06-04",   4766L,   2755L,
-  22L,     "2026-06-05",   5157L,   3463L,
-  23L,     "2026-06-06",   5040L,   2535L,
-  24L,     "2026-06-07",   5418L,   3489L,
-  25L,     "2026-06-08",   5681L,   3201L
+# ── Contact tracing master (Tableau 3, SitReps 018–025) ──────────────────────
+# Province-level rows; "Total" present only in SR021.
+# National totals are derived by summing the three provinces per date.
+ct_prov_raw <- read_csv(
+  here("data", "processed", "master_contact_tracing.csv"),
+  show_col_types = FALSE
 ) |>
   mutate(
-    data_date = as.Date(data_date),
-    day_idx   = as.integer(data_date - min(data_date)) + 1L,
-    pct_obs   = followed / listed
-  )
+    data_date         = ymd(data_date),
+    contacts_listed   = as.integer(contacts_listed),
+    contacts_followed = as.integer(contacts_followed),
+    pct_followed      = as.numeric(pct_followed)
+  ) |>
+  # Keep only the three named provinces (drop the SR021 "Total" row —
+  # we will recompute the national total by summing provinces)
+  filter(province %in% c("Ituri", "Nord-Kivu", "Sud-Kivu")) |>
+  mutate(province = factor(province, levels = c("Ituri", "Nord-Kivu", "Sud-Kivu")))
+
+# National totals by summing provinces per date / sitrep
+ct <- ct_prov_raw |>
+  group_by(data_date, sitrep_source) |>
+  summarise(
+    listed    = sum(contacts_listed,   na.rm = TRUE),
+    followed  = sum(contacts_followed, na.rm = TRUE),
+    .groups   = "drop"
+  ) |>
+  mutate(
+    sitrep  = as.integer(str_extract(sitrep_source, "SitRep_0*(\\d+)") |> str_remove("SitRep_0*")),
+    day_idx = as.integer(data_date - min(data_date)) + 1L,
+    pct_obs = followed / listed
+  ) |>
+  arrange(data_date)
+
+# Province-level with computed rate
+ct_prov <- ct_prov_raw |>
+  mutate(pct_obs = contacts_followed / contacts_listed) |>
+  arrange(province, data_date)
 
 # ── National cumulative confirmed cases ────────────────────────────────────────
 cum_conf <- read_csv(
@@ -116,15 +132,15 @@ cum_conf <- read_csv(
     conf_21d = slide_int(new_conf, sum, .before = 20L, .complete = FALSE)
   )
 
-# ── Join ──────────────────────────────────────────────────────────────────────
-ct <- ct_raw |>
+# ── Join contacts per case ratios ──────────────────────────────────────────────
+ct <- ct |>
   left_join(
     cum_conf |> select(date, cum_conf, new_conf, conf_21d),
     by = c("data_date" = "date")
   ) |>
   mutate(
-    cpc_cum = listed / cum_conf,    # contacts per cumulative case (biased low)
-    cpc_21d = listed / conf_21d     # contacts per case in 21-day rolling window
+    cpc_cum = listed / cum_conf,
+    cpc_21d = listed / conf_21d
   )
 ```
 
@@ -193,40 +209,31 @@ The 21-day denominator is consistently larger than the cumulative denominator ac
 ### Provincial breakdown
 
 ```{r fig-provincial}
-#| fig-cap: "Provincial contact follow-up rates for 7 June 2026 (SitRep 024), the most commonly cited date. Ituri carries the largest contact burden but has the lowest follow-up rate. Error bars show exact binomial 95% confidence intervals."
-#| fig-width: 7
-#| fig-height: 4
+#| fig-cap: "Provincial contact follow-up rates over time (SitReps 018\u2013025). Point size is proportional to the number of contacts listed. Ituri dominates by volume but consistently has the lowest follow-up rate; Nord-Kivu and Sud-Kivu remain closer to or above the 80% threshold."
+#| fig-width: 9
+#| fig-height: 4.5
 
-prov <- tribble(
-  ~province,   ~listed, ~followed,
-  "Ituri",       4454L,   2678L,
-  "Nord-Kivu",    738L,    587L,
-  "Sud-Kivu",     226L,    224L
-) |>
-  mutate(
-    rate  = followed / listed,
-    lo    = map2_dbl(followed, listed, \(x, n) binom.test(x, n)$conf.int[1]),
-    hi    = map2_dbl(followed, listed, \(x, n) binom.test(x, n)$conf.int[2]),
-    province = fct_reorder(province, rate)
-  )
-
-ggplot(prov, aes(x = rate, y = province)) +
-  geom_vline(xintercept = 0.80, linetype = "dashed",
-             colour = "red3", linewidth = 0.7) +
-  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.15,
-                 colour = COL_RATE, linewidth = 0.8) +
-  geom_point(aes(size = listed), colour = COL_RATE) +
-  annotate("text", x = 0.81, y = 0.6,
-           label = "80% target", hjust = 0, size = 3.5, colour = "red3") +
-  scale_x_continuous(limits = c(0, 1), labels = label_percent(),
-                     breaks = seq(0, 1, 0.2)) +
-  scale_size_continuous(range = c(3, 12), labels = label_comma(),
+ggplot(ct_prov, aes(x = data_date, y = pct_obs, colour = province)) +
+  geom_hline(yintercept = 0.80, linetype = "dashed",
+             colour = "red3", linewidth = 0.6) +
+  geom_line(linewidth = 0.9) +
+  geom_point(aes(size = contacts_listed)) +
+  scale_colour_manual(
+    values = c("Ituri" = "#E69F00", "Nord-Kivu" = "#0072B2", "Sud-Kivu" = "#009E73")
+  ) +
+  scale_size_continuous(range = c(1.5, 8), labels = label_comma(),
                         name = "Contacts listed") +
-  labs(x = "Follow-up rate", y = NULL,
-       title = "Provincial contact follow-up rates — 7 June 2026",
-       subtitle = "Point size proportional to contacts listed; error bars = 95% CI") +
+  scale_x_date(breaks = unique(ct_prov$data_date), labels = label_date("%d %b")) +
+  scale_y_continuous(limits = c(0, 1), labels = label_percent(),
+                     breaks = seq(0, 1, 0.2)) +
+  annotate("text", x = min(ct_prov$data_date), y = 0.825,
+           label = "80% target", hjust = 0, size = 3, colour = "red3") +
+  labs(x = NULL, y = "Follow-up rate", colour = "Province",
+       title = "Provincial contact follow-up rates over time") +
   theme_minimal(base_size = 11) +
-  theme(legend.position = "bottom")
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.x = element_blank(),
+        legend.position = "bottom")
 ```
 
 ### Bayesian random-walk model

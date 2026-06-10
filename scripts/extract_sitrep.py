@@ -91,6 +91,11 @@ POE_COLS = [
     "total_sensitised", "contacts_listed", "alerts_raised",
 ]
 
+CONTACT_TRACING_COLS = [
+    "data_date", "province", "sitrep_source",
+    "contacts_listed", "contacts_followed", "pct_followed",
+]
+
 # Keywords that identify an alerts/investigation table that must NOT be treated
 # as a cumulative case-count table.  Checked against the table_title (lowercase).
 _ALERT_TITLE_KEYWORDS = (
@@ -288,6 +293,22 @@ TABLE 4 — key "poe":
   If this table does not exist, return "rows": [].
   Also provide "table_title", "period_end_date".
 
+TABLE 5 — key "contact_tracing":
+  Find the contact-tracing follow-up summary table (often titled
+  "Tableau 3. Suivi des contacts des cas confirmés au DD mois YYYY" or similar).
+  This table has ONE row per province plus a national Total row. Extract ALL rows
+  including the Total row. Row fields:
+    "province"           : province name (e.g. "Ituri", "Nord-Kivu", "Sud-Kivu",
+                           "Total" for the national aggregate row)
+    "contacts_listed"    : "Contacts sous suivi (n)" — number of contacts currently
+                           under follow-up
+    "contacts_followed"  : "Contacts vus (n)" — contacts actually visited on the day
+    "pct_followed"       : "Taux de suivi (%)" — follow-up rate as a number (e.g.
+                           "64,4" or "64.4", NOT "64,4%"); strip the % sign
+  If this table does not exist, return "rows": [].
+  Also provide "table_title" (copy the full title including the date) and
+  "data_date" as DD/MM/YYYY (parsed from the table title; empty if absent).
+
 Schema:
 {
   "new_cases": {
@@ -333,6 +354,16 @@ Schema:
     "rows": [
       {"total_passed": "...", "total_screened": "...", "total_handwashing": "...",
        "total_sensitised": "...", "contacts_listed": "...", "alerts_raised": "..."}
+    ]
+  },
+  "contact_tracing": {
+    "table_title": "...",
+    "data_date": "DD/MM/YYYY or empty",
+    "rows": [
+      {"province": "Ituri", "contacts_listed": "...", "contacts_followed": "...", "pct_followed": "..."},
+      {"province": "Nord-Kivu", "contacts_listed": "...", "contacts_followed": "...", "pct_followed": "..."},
+      {"province": "Sud-Kivu", "contacts_listed": "...", "contacts_followed": "...", "pct_followed": "..."},
+      {"province": "Total", "contacts_listed": "...", "contacts_followed": "...", "pct_followed": "..."}
     ]
   }
 }
@@ -576,6 +607,40 @@ def build_poe_counts(raw_data: dict, sitrep_date: str, source: str = "") -> pd.D
     return pd.DataFrame(rows, columns=POE_COLS)
 
 
+def build_contact_tracing_counts(
+    raw_data: dict, sitrep_date: str, source: str = ""
+) -> pd.DataFrame:
+    """Build a province-level contact-tracing follow-up DataFrame from TABLE 5."""
+    ct = raw_data.get("contact_tracing", {})
+    data_date = (
+        ct.get("data_date", "")
+        or parse_french_date(ct.get("table_title", ""))
+        or sitrep_date
+    )
+    rows = []
+    for r in ct.get("rows", []):
+        province = r.get("province", "").strip()
+        if not province:
+            continue
+        listed    = _nd(r.get("contacts_listed", ""))
+        followed  = _nd(r.get("contacts_followed", ""))
+        pct       = _nd(r.get("pct_followed", ""))
+        # Require at least the listed + followed columns to have data
+        if listed == "" and followed == "":
+            continue
+        # Strip % signs and normalise decimal separator
+        pct_clean = pct.replace("%", "").replace(",", ".").strip() if pct else ""
+        rows.append({
+            "data_date":          data_date,
+            "province":           province,
+            "sitrep_source":      source,
+            "contacts_listed":    listed,
+            "contacts_followed":  followed,
+            "pct_followed":       pct_clean,
+        })
+    return pd.DataFrame(rows, columns=CONTACT_TRACING_COLS)
+
+
 def load_pdf_b64(path: Path) -> str:
     """Read a PDF file and return its base64-encoded content."""
     with open(path, "rb") as fh:
@@ -725,6 +790,7 @@ def save_outputs(
     combined_df: pd.DataFrame,
     response_df: pd.DataFrame,
     poe_df: pd.DataFrame,
+    contact_tracing_df: pd.DataFrame,
     raw_data: dict,
     output_dir: Path,
 ) -> None:
@@ -747,6 +813,10 @@ def save_outputs(
     if not poe_df.empty:
         poe_df.to_csv(
             output_dir / "poe_counts.csv", index=False, encoding="utf-8-sig"
+        )
+    if not contact_tracing_df.empty:
+        contact_tracing_df.to_csv(
+            output_dir / "contact_tracing_counts.csv", index=False, encoding="utf-8-sig"
         )
 
     # ── Raw JSON (for auditing / re-running tests without an API call)
@@ -828,12 +898,13 @@ def _process_one(
         sitrep_date = parse_french_date(data["new_cases"].get("table_title", ""))
     if not sitrep_date:
         sitrep_date = parse_french_date(data["cumulative"].get("table_title", ""))
-    combined_df   = build_combined_counts(data, sitrep_date, source=pdf_path.stem)
-    response_df   = build_response_counts(data, sitrep_date, source=pdf_path.stem)
-    poe_df        = build_poe_counts(data, sitrep_date, source=pdf_path.stem)
+    combined_df        = build_combined_counts(data, sitrep_date, source=pdf_path.stem)
+    response_df        = build_response_counts(data, sitrep_date, source=pdf_path.stem)
+    poe_df             = build_poe_counts(data, sitrep_date, source=pdf_path.stem)
+    contact_tracing_df = build_contact_tracing_counts(data, sitrep_date, source=pdf_path.stem)
     print(f"{tag}Saving outputs → {output_dir.name}/")
-    save_outputs(new_cases_df, cumulative_df, combined_df, response_df, poe_df, data, output_dir)
-    return combined_df, data, new_cases_df, cumulative_df, response_df, poe_df
+    save_outputs(new_cases_df, cumulative_df, combined_df, response_df, poe_df, contact_tracing_df, data, output_dir)
+    return combined_df, data, new_cases_df, cumulative_df, response_df, poe_df, contact_tracing_df
 
 
 def load_processed(path: Path) -> dict:
@@ -859,13 +930,16 @@ def _run_rebuild(output_dir: Path) -> None:
     response_dfs: list[pd.DataFrame] = []
     poe_dfs:      list[pd.DataFrame] = []
 
+    contact_tracing_dfs: list[pd.DataFrame] = []
+
     for sitrep_dir in sorted(sitreps_dir.iterdir()):
         if not sitrep_dir.is_dir():
             continue
         for csv_name, target in [
-            ("combined_counts.csv",  combined_dfs),
-            ("response_counts.csv",  response_dfs),
-            ("poe_counts.csv",        poe_dfs),
+            ("combined_counts.csv",          combined_dfs),
+            ("response_counts.csv",          response_dfs),
+            ("poe_counts.csv",               poe_dfs),
+            ("contact_tracing_counts.csv",   contact_tracing_dfs),
         ]:
             p = sitrep_dir / csv_name
             if p.exists():
@@ -902,6 +976,15 @@ def _run_rebuild(output_dir: Path) -> None:
         poe_path = output_dir / "master_poe_counts.csv"
         poe_all.to_csv(poe_path, index=False, encoding="utf-8-sig")
         print(f"  master_poe_counts.csv        →  {len(poe_all)} rows")
+
+    if contact_tracing_dfs:
+        ct_all = _dedupe_latest_revision(
+            pd.concat(contact_tracing_dfs, ignore_index=True),
+            subset=["data_date", "province"],
+        )
+        ct_path = output_dir / "master_contact_tracing.csv"
+        ct_all.to_csv(ct_path, index=False, encoding="utf-8-sig")
+        print(f"  master_contact_tracing.csv   →  {len(ct_all)} rows")
 
     n_sitreps = len(combined_dfs)
     print(f"\nRebuilt from {n_sitreps} sitrep director{'y' if n_sitreps == 1 else 'ies'} "
@@ -1047,10 +1130,11 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
     all_new = []
     all_response = []
     all_poe = []
+    all_contact_tracing = []
     for i, pdf_path in enumerate(new_pdfs, 1):
         stem = _canonical_output_stem(pdf_path, pdf_dir)
         per_dir = output_dir / "epicentre_format" / stem
-        combined_df, _, _, _, response_df, poe_df = _process_one(
+        combined_df, _, _, _, response_df, poe_df, contact_tracing_df = _process_one(
             client, pdf_path, per_dir, label=f"{i}/{len(new_pdfs)}"
         )
         all_new.append(combined_df)
@@ -1058,6 +1142,8 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
             all_response.append(response_df)
         if not poe_df.empty:
             all_poe.append(poe_df)
+        if not contact_tracing_df.empty:
+            all_contact_tracing.append(contact_tracing_df)
         processed[pdf_path.name] = {
             "processed_at": datetime.now(timezone.utc).isoformat(),
             "rows_added": len(combined_df),
@@ -1077,6 +1163,12 @@ def _run_update(client: anthropic.Anthropic, output_dir: Path, pdf_dir: Path) ->
             pd.concat(all_poe, ignore_index=True),
             output_dir / "master_poe_counts.csv",
             dedup_subset=["date", "sitrep_source"],
+        )
+    if all_contact_tracing:
+        append_to_master_generic(
+            pd.concat(all_contact_tracing, ignore_index=True),
+            output_dir / "master_contact_tracing.csv",
+            dedup_subset=["data_date", "province", "sitrep_source"],
         )
 
     save_processed(processed_path, processed)
