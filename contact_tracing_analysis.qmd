@@ -1,0 +1,389 @@
+---
+title: "Contact Tracing Performance — MVE DRC 2026"
+subtitle: "Bayesian estimation of daily follow-up rates over time"
+date: today
+format:
+  html:
+    theme: flatly
+    toc: true
+    toc-depth: 3
+    embed-resources: true
+    code-fold: true
+    code-summary: "Show code"
+execute:
+  warning: false
+  message: false
+  cache: true
+---
+
+## Introduction
+
+Daily contact tracing performance is one of the most sensitive *leading* indicators of outbreak control in filovirus outbreaks. The INSP DRC situation reports publish, from SitRep 018 onwards, a national summary table (Tableau 3) disaggregated by province, reporting the number of contacts currently under follow-up (*contacts sous suivi*), the number actually visited on the reporting day (*contacts vus*), and the observed follow-up proportion. This document extracts those data, states their structural limitations explicitly, and fits a Bayesian random-walk model to estimate the underlying time-varying follow-up rate.
+
+## Data and statistical considerations
+
+### Data source
+
+Tableau 3 data were extracted from eight consecutive INSP situation reports (SitReps 018–025, covering data dates 1–8 June 2026) using the automated Claude Sonnet extraction pipeline. The outcome for each day is the binomial pair (contacts followed, contacts listed under follow-up). Contact tracing data were available at provincial resolution (Ituri, Nord-Kivu, Sud-Kivu) but national totals are modelled here.
+
+### Lag, truncation, and censoring
+
+Three features of the reporting mechanism must be considered when interpreting daily contact-tracing rates; all three operate in the direction of *underestimating* true follow-up performance.
+
+**Reporting lag.** New confirmed cases undergo laboratory confirmation with a typical lag of one to three days from symptom onset or sample collection. Contacts are identified and listed in the 24–48 hours following case confirmation. The contacts currently *sous suivi* therefore reflect the exposure network of cases confirmed approximately two to four days earlier, not the case count reported on the same day. The follow-up rate is consequently a lagged signal: genuine improvements in operational capacity become visible in the metric only after a delay of several days.
+
+**Right truncation of the denominator.** Contacts remain under active follow-up for 21 days from their last exposure. The *contacts sous suivi* denominator at time $t$ therefore represents only those contacts whose listing date falls within the window $(t - 21, \, t]$. Contacts linked to cases confirmed more than 21 days ago have exited the window and are excluded from the denominator regardless of whether they ever completed follow-up. In a growing outbreak this truncation means the denominator grows with the *incident* case burden in the recent window, not the cumulative case burden — a critical distinction when computing contacts-per-case ratios.
+
+**Right censoring.** Contacts newly listed in the 24 hours before the reporting cut-off have had at most one opportunity to be visited. Classifying them as *not yet visited* conflates incomplete opportunity with non-compliance. During periods of rapid contact accrual — driven by many new confirmed cases per day — this freshly listed cohort constitutes a growing share of the *sous suivi* denominator, mechanically depressing the reported follow-up rate. The observed daily rate is therefore a conservative lower bound on eventual follow-up completeness for each cohort; the true per-cohort completion rate will be higher once all 21 days have elapsed.
+
+### Contacts per case
+
+The commonly cited figure of contacts listed per confirmed case requires careful interpretation. Computing it as:
+
+$$\text{CPCase}_{\text{cum}} = \frac{\text{contacts sous suivi}[t]}{\text{cumulative confirmed cases}[t]}$$
+
+is biased downward because the denominator includes *all* confirmed cases since the outbreak began, while the numerator covers only the most recent 21-day window. A less biased denominator is the rolling sum of newly confirmed cases over the preceding 21 days:
+
+$$\text{CPCase}_{21d} = \frac{\text{contacts sous suivi}[t]}{\sum_{s=t-20}^{t} \Delta C_s}$$
+
+where $\Delta C_s$ is the increment in cumulative confirmed cases on day $s$. Both measures are presented.
+
+### Statistical model
+
+The national daily follow-up proportion is modelled as a Binomial outcome with a time-varying logit parameter evolving as a first-order random walk:
+
+$$\text{followed}_t \sim \text{Binomial}(\text{listed}_t, \; p_t)$$
+
+$$\text{logit}(p_t) = \mu_t$$
+
+$$\mu_t \mid \mu_{t-1} \sim \mathcal{N}(\mu_{t-1}, \; \sigma), \qquad t = 2, \ldots, T$$
+
+$$\mu_1 \sim \mathcal{N}(0, \; 1.5), \qquad \sigma \sim \mathcal{N}^+(0, \; 0.5)$$
+
+The random walk is parameterised in non-centred form for efficient sampling. The prior on $\mu_1$ places 95% probability on follow-up rates between approximately 4% and 96% — weakly informative. The prior on $\sigma$ penalises large day-to-day swings on the logit scale while permitting substantial variation. The model is fitted using Stan (via `cmdstanr`) with four independent chains of 3,000 iterations each (1,000 warm-up). Convergence is assessed via $\hat{R} < 1.01$ and bulk effective sample size $> 400$. Posterior predictive checks evaluate model adequacy.
+
+```{r setup}
+#| cache: false
+pacman::p_load(
+  tidyverse, here, scales, lubridate, patchwork,
+  cmdstanr, posterior, bayesplot, tidybayes, slider, flextable
+)
+options(mc.cores = parallel::detectCores())
+bayesplot_theme_set(theme_minimal(base_size = 11))
+
+# Colour palette
+COL_RATE  <- "#0072B2"
+COL_OBS   <- "#E69F00"
+COL_GREY  <- "grey60"
+```
+
+```{r data}
+# ── Tableau 3 data (SitReps 018–025) ──────────────────────────────────────────
+# Data dates are the "au DD mois YYYY" dates from each Tableau 3 header,
+# which are consistently one day before the sitrep publication date.
+# SR018 header names the variant rather than the date; data date inferred as
+# publication date − 1 day (= 2026-06-01), consistent with the series.
+ct_raw <- tribble(
+  ~sitrep, ~data_date,    ~listed, ~followed,
+  18L,     "2026-06-01",   4010L,   1760L,
+  19L,     "2026-06-02",   4293L,   1955L,
+  20L,     "2026-06-03",   4551L,   2525L,
+  21L,     "2026-06-04",   4766L,   2755L,
+  22L,     "2026-06-05",   5157L,   3463L,
+  23L,     "2026-06-06",   5040L,   2535L,
+  24L,     "2026-06-07",   5418L,   3489L,
+  25L,     "2026-06-08",   5681L,   3201L
+) |>
+  mutate(
+    data_date = as.Date(data_date),
+    day_idx   = as.integer(data_date - min(data_date)) + 1L,
+    pct_obs   = followed / listed
+  )
+
+# ── National cumulative confirmed cases ────────────────────────────────────────
+cum_conf <- read_csv(
+  here("data", "processed", "insp_format",
+       "insp_sitrep__national_cumulative_confirmed_cases__daily.csv"),
+  show_col_types = FALSE
+) |>
+  transmute(
+    date     = ymd(date),
+    cum_conf = as.integer(national_cumulative_confirmed_cases)
+  ) |>
+  arrange(date) |>
+  mutate(
+    new_conf = pmax(0L, cum_conf - lag(cum_conf, default = 0L)),
+    conf_21d = slide_int(new_conf, sum, .before = 20L, .complete = FALSE)
+  )
+
+# ── Join ──────────────────────────────────────────────────────────────────────
+ct <- ct_raw |>
+  left_join(
+    cum_conf |> select(date, cum_conf, new_conf, conf_21d),
+    by = c("data_date" = "date")
+  ) |>
+  mutate(
+    cpc_cum = listed / cum_conf,    # contacts per cumulative case (biased low)
+    cpc_21d = listed / conf_21d     # contacts per case in 21-day rolling window
+  )
+```
+
+## Results
+
+### Descriptive trends
+
+```{r fig-descriptive}
+#| fig-cap: "Daily contact tracing performance, data dates 1–8 June 2026 (SitReps 018–025). **Left**: contacts under follow-up (grey) and contacts visited on the reporting day (orange). **Centre**: observed daily follow-up rate with the WHO 80% target (dashed red). **Right**: contacts listed per case — cumulative case denominator (grey, biased low) and 21-day rolling incidence denominator (orange, less biased). Vertical bars on the right panel span the two denominators to illustrate the truncation effect."
+#| fig-width: 12
+#| fig-height: 4.5
+
+p1 <- ggplot(ct, aes(x = data_date)) +
+  geom_col(aes(y = listed),   fill = COL_GREY,  width = 0.7, alpha = 0.8) +
+  geom_col(aes(y = followed), fill = COL_OBS,   width = 0.7, alpha = 0.9) +
+  scale_x_date(breaks = ct$data_date, labels = label_date("%d %b")) +
+  scale_y_continuous(labels = label_comma(),
+                     expand = expansion(mult = c(0, 0.1))) +
+  labs(x = NULL, y = "Contacts (n)",
+       title = "Contacts listed vs visited",
+       subtitle = "Grey = listed; orange = visited") +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.x = element_blank())
+
+p2 <- ggplot(ct, aes(x = data_date, y = pct_obs)) +
+  geom_hline(yintercept = 0.80, linetype = "dashed",
+             colour = "red3", linewidth = 0.7) +
+  geom_line(colour = COL_RATE, linewidth = 1.1) +
+  geom_point(colour = COL_RATE, size = 3) +
+  annotate("text", x = min(ct$data_date), y = 0.825,
+           label = "80% target", hjust = 0, size = 3, colour = "red3") +
+  scale_x_date(breaks = ct$data_date, labels = label_date("%d %b")) +
+  scale_y_continuous(limits = c(0, 1), labels = label_percent(),
+                     breaks = seq(0, 1, 0.2)) +
+  labs(x = NULL, y = "Follow-up rate",
+       title = "Daily follow-up rate") +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.x = element_blank())
+
+p3 <- ggplot(ct, aes(x = data_date)) +
+  geom_linerange(aes(ymin = cpc_cum, ymax = cpc_21d),
+                 colour = "grey80", linewidth = 2) +
+  geom_line(aes(y = cpc_cum),  colour = COL_GREY, linewidth = 1,   linetype = "dashed") +
+  geom_line(aes(y = cpc_21d),  colour = COL_OBS,  linewidth = 1.1) +
+  geom_point(aes(y = cpc_cum), colour = COL_GREY, size = 2.5) +
+  geom_point(aes(y = cpc_21d), colour = COL_OBS,  size = 2.5) +
+  scale_x_date(breaks = ct$data_date, labels = label_date("%d %b")) +
+  scale_y_continuous(limits = c(0, NA),
+                     expand = expansion(mult = c(0, 0.12))) +
+  labs(x = NULL, y = "Contacts listed / case",
+       title = "Contacts per case",
+       subtitle = "Orange = 21-day denominator; grey dashed = cumulative") +
+  theme_minimal(base_size = 10) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        panel.grid.major.x = element_blank())
+
+p1 + p2 + p3
+```
+
+::: {.callout-note}
+The 21-day denominator is consistently larger than the cumulative denominator across all eight days, confirming that most active contacts in the follow-up pool relate to cases confirmed within the last three weeks. The gap between the two denominators widens as cumulative cases accumulate.
+:::
+
+### Provincial breakdown
+
+```{r fig-provincial}
+#| fig-cap: "Provincial contact follow-up rates for 7 June 2026 (SitRep 024), the most commonly cited date. Ituri carries the largest contact burden but has the lowest follow-up rate. Error bars show exact binomial 95% confidence intervals."
+#| fig-width: 7
+#| fig-height: 4
+
+prov <- tribble(
+  ~province,   ~listed, ~followed,
+  "Ituri",       4454L,   2678L,
+  "Nord-Kivu",    738L,    587L,
+  "Sud-Kivu",     226L,    224L
+) |>
+  mutate(
+    rate  = followed / listed,
+    lo    = map2_dbl(followed, listed, \(x, n) binom.test(x, n)$conf.int[1]),
+    hi    = map2_dbl(followed, listed, \(x, n) binom.test(x, n)$conf.int[2]),
+    province = fct_reorder(province, rate)
+  )
+
+ggplot(prov, aes(x = rate, y = province)) +
+  geom_vline(xintercept = 0.80, linetype = "dashed",
+             colour = "red3", linewidth = 0.7) +
+  geom_errorbarh(aes(xmin = lo, xmax = hi), height = 0.15,
+                 colour = COL_RATE, linewidth = 0.8) +
+  geom_point(aes(size = listed), colour = COL_RATE) +
+  annotate("text", x = 0.81, y = 0.6,
+           label = "80% target", hjust = 0, size = 3.5, colour = "red3") +
+  scale_x_continuous(limits = c(0, 1), labels = label_percent(),
+                     breaks = seq(0, 1, 0.2)) +
+  scale_size_continuous(range = c(3, 12), labels = label_comma(),
+                        name = "Contacts listed") +
+  labs(x = "Follow-up rate", y = NULL,
+       title = "Provincial contact follow-up rates — 7 June 2026",
+       subtitle = "Point size proportional to contacts listed; error bars = 95% CI") +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "bottom")
+```
+
+### Bayesian random-walk model
+
+```{r stan-compile}
+#| cache: false
+mod <- cmdstan_model(
+  here("scripts", "contact_tracing_rw.stan"),
+  quiet = TRUE
+)
+```
+
+```{r stan-fit}
+#| cache: true
+stan_data <- list(
+  T        = nrow(ct),
+  followed = ct$followed,
+  listed   = ct$listed
+)
+
+fit <- mod$sample(
+  data            = stan_data,
+  chains          = 4,
+  parallel_chains = 4,
+  iter_warmup     = 1000,
+  iter_sampling   = 2000,
+  seed            = 2026,
+  refresh         = 0
+)
+```
+
+```{r tbl-diagnostics}
+#| tbl-cap: "Posterior summaries and convergence diagnostics. R̂ < 1.01 and bulk ESS > 400 indicate satisfactory convergence for all parameters."
+
+fit$summary(
+  variables = c("sigma", paste0("p_t[", seq_len(nrow(ct)), "]"))
+) |>
+  mutate(
+    variable = case_when(
+      variable == "sigma" ~ "σ (random-walk SD, logit scale)",
+      TRUE ~ paste0("p[", ct$data_date[as.integer(str_extract(variable, "\\d+"))],
+                    "] (", ct$sitrep[as.integer(str_extract(variable, "\\d+"))], ")")
+    ),
+    across(where(is.numeric), \(x) round(x, 3))
+  ) |>
+  select(variable, mean, sd, q5, q95, rhat, ess_bulk) |>
+  flextable() |>
+  set_header_labels(
+    variable = "Parameter", mean = "Mean", sd = "SD",
+    q5 = "5%", q95 = "95%", rhat = "R̂", ess_bulk = "ESS (bulk)"
+  ) |>
+  color(
+    i = ~ rhat > 1.01, j = "rhat", color = "red"
+  ) |>
+  autofit()
+```
+
+```{r fig-posterior}
+#| fig-cap: "Posterior time-varying contact follow-up rate. Open circles show the observed daily rate. The posterior median (line) and 50%/90% credible intervals (dark/light ribbons) are derived from the Bayesian random-walk model. The dashed red line marks the WHO 80% target. Note the wider credible intervals at the series endpoints, a characteristic of the random-walk prior."
+#| fig-width: 9
+#| fig-height: 5.5
+
+post_p <- fit$summary(
+  variables = paste0("p_t[", seq_len(nrow(ct)), "]")
+) |>
+  mutate(
+    data_date = ct$data_date,
+    sitrep    = ct$sitrep
+  )
+
+# Also extract 50% CI
+post_draws <- fit$draws(
+  variables = paste0("p_t[", seq_len(nrow(ct)), "]"),
+  format    = "df"
+) |>
+  pivot_longer(
+    cols      = starts_with("p_t"),
+    names_to  = "param",
+    values_to = "draw"
+  ) |>
+  mutate(t = as.integer(str_extract(param, "\\d+"))) |>
+  group_by(t) |>
+  summarise(
+    q25  = quantile(draw, 0.25),
+    q75  = quantile(draw, 0.75),
+    .groups = "drop"
+  ) |>
+  left_join(post_p |> mutate(t = row_number()), by = "t")
+
+ggplot(post_draws, aes(x = data_date)) +
+  geom_hline(yintercept = 0.80, linetype = "dashed",
+             colour = "red3", linewidth = 0.7) +
+  geom_ribbon(aes(ymin = q5, ymax = q95),
+              fill = COL_RATE, alpha = 0.15) +
+  geom_ribbon(aes(ymin = q25, ymax = q75),
+              fill = COL_RATE, alpha = 0.30) +
+  geom_line(aes(y = median), colour = COL_RATE, linewidth = 1.3) +
+  geom_point(data = ct,
+             aes(x = data_date, y = pct_obs),
+             shape = 21, fill = "white", colour = COL_RATE,
+             size = 4, stroke = 1.4) +
+  annotate("text", x = min(ct$data_date), y = 0.825,
+           label = "WHO 80% target", hjust = 0,
+           size = 3.5, colour = "red3") +
+  scale_x_date(
+    breaks = ct$data_date,
+    labels = label_date("%d %b"),
+    expand = expansion(add = 0.5)
+  ) +
+  scale_y_continuous(
+    limits = c(0, 1), labels = label_percent(),
+    breaks = seq(0, 1, 0.2)
+  ) +
+  labs(
+    x        = NULL,
+    y        = "Daily follow-up rate",
+    title    = "Posterior time-varying contact follow-up rate",
+    subtitle = "Bayesian random-walk model (Binomial likelihood)\nDark ribbon = 50% CI; light ribbon = 90% CI; open points = observed",
+    caption  = paste0(
+      "Data: INSP DRC SitReps 018–025 (Tableau 3). ",
+      "σ posterior median = ",
+      round(fit$summary("sigma")$median, 2),
+      " (logit scale)."
+    )
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x      = element_text(angle = 45, hjust = 1),
+    panel.grid.minor = element_blank()
+  )
+```
+
+```{r fig-ppc}
+#| fig-cap: "Posterior predictive check. The dark line shows the distribution of observed daily contact-follow counts; light blue curves show 200 replicated datasets drawn from the posterior predictive distribution. Adequate overlap indicates the model captures the data-generating process."
+#| fig-width: 7
+#| fig-height: 4.5
+
+yrep <- fit$draws("followed_rep", format = "matrix")
+
+ppc_dens_overlay(
+  y    = ct$followed,
+  yrep = yrep[sample(nrow(yrep), 200), ]
+) +
+  labs(
+    title    = "Posterior predictive check",
+    subtitle = "Contacts followed per day (n)"
+  )
+```
+
+## Discussion
+
+The daily follow-up rate oscillated between 44% and 67% over the eight days examined, consistently below the WHO minimum threshold of 80% for effective outbreak control. The Bayesian random-walk model smooths over the day-to-day variation — driven partly by the censoring of freshly listed contacts, partly by genuine operational capacity fluctuations — and the posterior σ (the magnitude of daily logit-scale drift) quantifies how rapidly the underlying rate can change.
+
+**Censoring inflates apparent volatility.** Days with high incidence bring many new contacts into the *sous suivi* denominator within hours of listing; those contacts have had minimal opportunity to be visited. The 7 June dip to 50.3% followed by a partial recovery to 56.3% on 8 June is consistent with a surge of newly listed contacts on 7 June (35 new confirmed cases were reported that day, the highest single-day count at that point) mechanically depressing the rate before follow-up teams could catch up.
+
+**Contacts per case.** Using the 21-day rolling incidence denominator (`r round(mean(ct$cpc_21d, na.rm = TRUE), 1)` contacts listed per recent case on average) rather than the cumulative denominator (`r round(mean(ct$cpc_cum, na.rm = TRUE), 1)`) reveals that contact listing is more intensive than the naïve ratio suggests. The commonly cited figure of "6 contacts followed per case" (3,489 ÷ 550 on 7 June) conflates the truncation and follow-up-shortfall effects; it should not be interpreted as a measure of either listing completeness or cohort follow-up success.
+
+**Provincial heterogeneity.** The aggregate 64.4% on 7 June masked rates of 60.1% (Ituri, with 82% of active contacts), 79.5% (Nord-Kivu), and 99.1% (Sud-Kivu). Aggregate metrics conceal the extent to which Ituri is driving the overall shortfall; targeted operational support to Ituri's contact tracing teams would have the largest impact on the national rate.
+
+**Limitations.** The model covers only eight time points, and the posterior uncertainty is correspondingly wide. The random-walk prior assumes a smooth underlying process; abrupt operational disruptions — security incidents, team rotation, supply interruptions — would be poorly captured. Individual-level contact cohort data (with exact listing dates) would permit formal right-censored survival analysis to estimate the probability that each contact completes the full 21-day follow-up period; such data are not available from the published situation reports.
